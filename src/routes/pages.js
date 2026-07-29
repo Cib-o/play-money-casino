@@ -21,9 +21,9 @@ export function registerPageRoutes(app) {
     '/profile': 'profile.html',
   };
   for (const [route, file] of Object.entries(playerPages)) {
-    if (!has(file)) continue;
     app.get(route, (req, reply) => {
       if (!app.sessionUser(req)) return reply.redirect('/login');
+      if (!has(file)) return reply.code(404).send({ error: 'err_not_found' });
       return reply.sendFile(file);
     });
   }
@@ -48,11 +48,11 @@ export function registerPageRoutes(app) {
     '/admin/settings': 'admin/settings.html',
   };
   for (const [route, file] of Object.entries(adminPages)) {
-    if (!has(file)) continue;
     app.get(route, (req, reply) => {
       const user = app.sessionUser(req);
       if (!user) return reply.redirect('/login');
       if (user.role !== 'admin') return reply.redirect('/');
+      if (!has(file)) return reply.code(404).send({ error: 'err_not_found' });
       return reply.sendFile(file);
     });
   }
