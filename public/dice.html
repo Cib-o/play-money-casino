@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_dice">კამათელი</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="title_dice"></h1>
+    </div>
+    <div class="game-layout">
+      <section class="panel dice-area">
+        <div class="dice-roll num" id="roll-display">··.··</div>
+        <div class="result-line" id="result"></div>
+        <div class="dice-bar" id="bar">
+          <div class="bar-win" id="bar-win"></div>
+          <div class="bar-marker" id="bar-marker" hidden></div>
+        </div>
+        <div class="dice-controls">
+          <div class="dir-toggle" role="group">
+            <button type="button" id="dir-under" class="btn ghost active" data-t="dice_under"></button>
+            <button type="button" id="dir-over" class="btn ghost" data-t="dice_over"></button>
+          </div>
+          <div class="target-row">
+            <label for="target" data-t="dice_target"></label>
+            <input id="target" type="range" min="2" max="98" step="1" value="50">
+            <strong class="num" id="target-value">50</strong>
+          </div>
+          <div class="dice-stats">
+            <div class="stat">
+              <span class="k" data-t="dice_chance"></span>
+              <strong class="num" id="chance"></strong>
+            </div>
+            <div class="stat">
+              <span class="k" data-t="dice_mult"></span>
+              <strong class="num" id="mult"></strong>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside class="panel bet-box">
+        <div id="bet-control"></div>
+        <button class="btn big" id="roll-btn" data-t="btn_roll"></button>
+        <div>
+          <label data-t="last_results"></label>
+          <div class="strip" id="strip"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/dice.js"></script>
+</body>
+</html>

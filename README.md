@@ -165,6 +165,13 @@ European single-zero with the classic paytable (house edge exactly
 red/black, odd/even, dozens and columns; several bets per spin, with
 the round total checked against the bet limits.
 
+### Dice
+Pick a target (2–98) and roll under or over. The roll takes one of
+10,000 equally likely values, so win probabilities are exact
+rationals, and the payout multiplier is `RTP / p` — the expected
+return equals the configured RTP by construction, up to ~48× at the
+extremes.
+
 ## Backup
 
 ```bash

@@ -5,6 +5,7 @@ import { initShell, state, el } from '../shell.js';
 const GAME_META = [
   { key: 'slots', href: '/slots', art: '🎰', hint: 'hint_slots' },
   { key: 'roulette', href: '/roulette', art: '🎡', hint: 'hint_roulette' },
+  { key: 'dice', href: '/dice', art: '🎲', hint: 'hint_dice' },
 ];
 
 const ctx = await initShell({ requireAuth: true });

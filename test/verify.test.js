@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { uniform as serverUniform, sha256hex as serverSha256 } from '../src/rng.js';
 import { spin } from '../src/games/slots.js';
 import { spinNumber, settle } from '../src/games/roulette.js';
+import { roll } from '../src/games/dice.js';
 import {
   uniform as clientUniform,
   sha256Hex as clientSha256,
   verifySlots,
   verifyRoulette,
+  verifyDice,
 } from '../public/js/verify-core.js';
 
 // The browser verifier must mirror the server byte for byte. Running
@@ -49,6 +51,22 @@ test('verifyRoulette reproduces the server pocket and settlement', async () => {
     const client = await verifyRoulette({ serverSeed: SEED, clientSeed: 'wheel', nonce, bets });
     assert.equal(client.number, number, `pocket at nonce ${nonce}`);
     assert.equal(client.payout, server.payout, `payout at nonce ${nonce}`);
+  }
+});
+
+test('verifyDice reproduces the server roll, win flag and multiplier', async () => {
+  for (const [target, direction] of [[50, 'under'], [10, 'under'], [80, 'over'], [2, 'under'], [98, 'over']]) {
+    for (let nonce = 0; nonce < 100; nonce++) {
+      const server = roll({
+        serverSeed: SEED, clientSeed: 'dice', nonce, rtp: 0.96, bet: 100, target, direction,
+      });
+      const client = await verifyDice({
+        serverSeed: SEED, clientSeed: 'dice', nonce, rtp: 0.96, target, direction,
+      });
+      assert.equal(client.r, server.r);
+      assert.equal(client.win, server.win);
+      assert.equal(client.mult, server.mult);
+    }
   }
 });
 

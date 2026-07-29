@@ -4,6 +4,7 @@ import { AppError } from '../errors.js';
 import { getOrCreateSeed, setClientSeed, rotateSeed } from '../seeds.js';
 import * as slots from '../games/slots.js';
 import * as roulette from '../games/roulette.js';
+import * as dice from '../games/dice.js';
 
 const PAGE_SIZE = 20;
 
@@ -186,6 +187,53 @@ export function registerGameRoutes(app) {
         });
         const { payout, results } = roulette.settle(req.body.bets, number);
         return { payout, outcome: { number, bets: results } };
+      });
+    },
+  );
+
+  // ── dice ──────────────────────────────────────────────────────────
+  app.post(
+    '/api/game/dice/roll',
+    {
+      preHandler: app.requireUser,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['bet', 'target', 'direction'],
+          properties: {
+            bet: { type: 'integer', minimum: 1, maximum: 1000000000 },
+            target: { type: 'integer', minimum: dice.MIN_TARGET, maximum: dice.MAX_TARGET },
+            direction: { type: 'string', enum: ['under', 'over'] },
+          },
+        },
+      },
+    },
+    async (req) => {
+      const settings = readSettings(db);
+      requireEnabled(settings, 'dice');
+      checkBet(req.body.bet, settings);
+      return resolveRound(req.user.id, 'dice', req.body.bet, (seed) => {
+        const out = dice.roll({
+          serverSeed: seed.server_seed,
+          clientSeed: seed.client_seed,
+          nonce: seed.nonce,
+          rtp: settings.rtp,
+          bet: req.body.bet,
+          target: req.body.target,
+          direction: req.body.direction,
+        });
+        return {
+          payout: out.payout,
+          outcome: {
+            rtp: settings.rtp,
+            target: req.body.target,
+            direction: req.body.direction,
+            roll: out.r,
+            win: out.win,
+            mult: out.mult,
+          },
+        };
       });
     },
   );

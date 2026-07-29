@@ -91,6 +91,20 @@ export async function verifyRoulette({ serverSeed, clientSeed, nonce, bets = [] 
   return { number, payout };
 }
 
+// ── Dice (mirrors src/games/dice.js) ──────────────────────────────
+export function diceWinChance(target, direction) {
+  return direction === 'under'
+    ? (target * 100) / 10000
+    : (9999 - target * 100) / 10000;
+}
+
+export async function verifyDice({ serverSeed, clientSeed, nonce, rtp, target, direction }) {
+  const r = Math.floor((await uniform(serverSeed, clientSeed, nonce, 0)) * 10000) / 100;
+  const win = direction === 'under' ? r < target : r > target;
+  const mult = rtp / diceWinChance(target, direction);
+  return { r, win, mult };
+}
+
 export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
   const { outs, cum } = slotTable(rtp);
   const u = await uniform(serverSeed, clientSeed, nonce, 0);

@@ -174,7 +174,16 @@ export const STRINGS = {
     roulette_d3: "3rd 12",
     roulette_col_name: "Column",
     bt_straight: "Number",
-    bt_split: "Split"
+    bt_split: "Split",
+    game_dice: "Dice",
+    hint_dice: "Roll under or over · up to 48×",
+    title_dice: "Dice",
+    dice_target: "Target",
+    dice_under: "Under",
+    dice_over: "Over",
+    dice_chance: "Win chance",
+    dice_mult: "Payout multiplier",
+    btn_roll: "Roll"
   },
   ka: {
     footer_notice: "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -347,6 +356,15 @@ export const STRINGS = {
     roulette_d3: "მე-3 12",
     roulette_col_name: "სვეტი",
     bt_straight: "ციფრი",
-    bt_split: "სპლიტი"
+    bt_split: "სპლიტი",
+    game_dice: "კამათელი",
+    hint_dice: "ნაკლებზე ან მეტზე · 48×-მდე",
+    title_dice: "კამათელი",
+    dice_target: "სამიზნე",
+    dice_under: "ნაკლები",
+    dice_over: "მეტი",
+    dice_chance: "მოგების შანსი",
+    dice_mult: "გასაცემის მამრავლი",
+    btn_roll: "გაგორება"
   }
 };

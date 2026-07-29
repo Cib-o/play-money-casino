@@ -1,7 +1,13 @@
 import { initShell, toast, toastError } from '../shell.js';
 import { api } from '../api.js';
 import { t, fmt } from '../i18n.js';
-import { sha256Hex, verifySlots, verifyRoulette, ROULETTE_RED } from '../verify-core.js';
+import {
+  sha256Hex,
+  verifySlots,
+  verifyRoulette,
+  verifyDice,
+  ROULETTE_RED,
+} from '../verify-core.js';
 
 const SYMBOLS = ['🍋', '🍒', '🍇', '🔔', '⭐', '💎', '7️⃣', '👑', '🎰'];
 
@@ -54,6 +60,24 @@ const GAMES = {
         matches: recorded
           ? out.number === recorded.outcome.number && out.payout === recorded.payout
           : null,
+      };
+    },
+  },
+  dice: {
+    usesRtp: true,
+    describe(outcome) {
+      const arrow = outcome.direction === 'under' ? '<' : '>';
+      return `${outcome.roll.toFixed(2)} ${arrow} ${outcome.target} · ${outcome.win ? '✓' : '✗'}`;
+    },
+    async compute({ serverSeed, clientSeed, nonce, rtp }) {
+      if (!recorded || recorded.game !== 'dice') return { text: '—', matches: null };
+      const { target, direction } = recorded.outcome;
+      const out = await verifyDice({ serverSeed, clientSeed, nonce, rtp, target, direction });
+      const arrow = direction === 'under' ? '<' : '>';
+      return {
+        text: `${out.r.toFixed(2)} ${arrow} ${target} · ${out.win ? '✓' : '✗'}`,
+        matches:
+          out.r === recorded.outcome.roll && out.win === recorded.outcome.win,
       };
     },
   },
