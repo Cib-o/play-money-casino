@@ -13,7 +13,7 @@
     "create-admin": "node scripts/create-admin.mjs",
     "demo-data": "node scripts/demo-data.mjs",
     "polish-georgian": "node scripts/polish-georgian.mjs",
-    "test": "node --test test/"
+    "test": "node --test"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
