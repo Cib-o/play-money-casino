@@ -466,6 +466,7 @@ footer.site {
 }
 .auth-card h1 { text-align: center; }
 .auth-card .sub { text-align: center; color: var(--muted); font-size: 13.5px; }
+.auth-card .btn { width: 100%; margin-top: 6px; }
 
 /* ── Slots ──────────────────────────────────────────────────────── */
 .slot-machine {

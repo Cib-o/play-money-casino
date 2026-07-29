@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_login">შესვლა</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main>
+    <div class="auth-wrap container">
+      <form class="auth-card" id="login-form" novalidate>
+        <h1 data-t="login_heading"></h1>
+        <p class="sub" data-t="login_sub"></p>
+        <div class="form-row">
+          <label for="username" data-t="login_username"></label>
+          <input id="username" name="username" type="text" autocomplete="username" required maxlength="64">
+        </div>
+        <div class="form-row">
+          <label for="password" data-t="login_password"></label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+        </div>
+        <button class="btn big" type="submit" data-t="login_submit"></button>
+      </form>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/login.js"></script>
+</body>
+</html>
