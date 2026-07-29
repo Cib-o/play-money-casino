@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_profile">პროფილი</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="prof_heading"></h1>
+    </div>
+    <section class="panel narrow">
+      <form id="profile-form" novalidate>
+        <div class="form-row">
+          <label for="p-display" data-t="prof_display_name"></label>
+          <input id="p-display" type="text" maxlength="40">
+        </div>
+        <div class="form-row">
+          <label for="p-locale" data-t="prof_language"></label>
+          <select id="p-locale">
+            <option value="ka" data-t="lang_ka"></option>
+            <option value="en" data-t="lang_en"></option>
+          </select>
+        </div>
+        <button class="btn" type="submit" data-t="save"></button>
+      </form>
+    </section>
+    <section class="panel narrow">
+      <h2 data-t="prof_change_password"></h2>
+      <form id="password-form" novalidate>
+        <div class="form-row">
+          <label for="p-current" data-t="prof_current"></label>
+          <input id="p-current" type="password" autocomplete="current-password" maxlength="200">
+        </div>
+        <div class="form-row">
+          <label for="p-new" data-t="prof_new"></label>
+          <input id="p-new" type="password" autocomplete="new-password" maxlength="200">
+        </div>
+        <button class="btn" type="submit" data-t="save"></button>
+      </form>
+    </section>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_history">ისტორია</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="title_history"></h1>
+    </div>
+    <section class="panel table-panel">
+      <table class="data">
+        <thead>
+          <tr>
+            <th data-t="hist_time"></th>
+            <th data-t="hist_game"></th>
+            <th class="num" data-t="hist_bet"></th>
+            <th class="num" data-t="hist_payout"></th>
+            <th class="num" data-t="hist_net"></th>
+            <th class="num" data-t="fair_nonce"></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+      <p id="history-empty" class="muted" data-t="hist_empty" hidden></p>
+    </section>
+    <div class="pager">
+      <button class="btn ghost small" id="prev" data-t="pager_prev"></button>
+      <span class="num" id="page-info"></span>
+      <button class="btn ghost small" id="next" data-t="pager_next"></button>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/history.js"></script>
+</body>
+</html>

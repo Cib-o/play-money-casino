@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_slots">სლოტები</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="title_slots"></h1>
+    </div>
+    <div class="game-layout">
+      <section class="panel slot-machine">
+        <div class="reels">
+          <div class="reel" id="reel-0">✦</div>
+          <div class="reel" id="reel-1">✦</div>
+          <div class="reel" id="reel-2">✦</div>
+        </div>
+        <div class="result-line" id="result"></div>
+      </section>
+      <aside class="panel bet-box">
+        <div id="bet-control"></div>
+        <button class="btn big" id="spin-btn" data-t="btn_spin"></button>
+        <div>
+          <label data-t="last_results"></label>
+          <div class="strip" id="strip"></div>
+        </div>
+        <details>
+          <summary data-t="paytable"></summary>
+          <table class="data paytable">
+            <thead>
+              <tr><th data-t="pay_symbol"></th><th class="num" data-t="pay_mult"></th></tr>
+            </thead>
+            <tbody id="paytable-body"></tbody>
+          </table>
+        </details>
+      </aside>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/slots.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_fairness">სამართლიანობა</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="fair_heading"></h1>
+    </div>
+    <section class="panel">
+      <p class="muted" data-t="fair_explain"></p>
+
+      <div class="kv">
+        <span class="k" data-t="fair_server_hash"></span>
+        <code class="seed-box num" id="hash"></code>
+      </div>
+
+      <div class="kv">
+        <span class="k" data-t="fair_client_seed"></span>
+        <div class="inline">
+          <input id="client-seed" type="text" maxlength="64" class="num">
+          <button class="btn ghost" id="save-client" data-t="save"></button>
+        </div>
+      </div>
+
+      <div class="kv">
+        <span class="k" data-t="fair_nonce"></span>
+        <span class="num" id="nonce"></span>
+      </div>
+
+      <div class="kv">
+        <span class="k" data-t="fair_rtp"></span>
+        <span class="num" id="rtp"></span>
+      </div>
+
+      <button class="btn violet" id="rotate" data-t="fair_rotate"></button>
+
+      <div id="revealed-panel" class="revealed" hidden>
+        <div class="kv">
+          <span class="k" data-t="fair_revealed"></span>
+          <code class="seed-box num" id="revealed-seed"></code>
+        </div>
+        <div class="kv">
+          <span class="k" data-t="fair_revealed_hash"></span>
+          <code class="seed-box num" id="revealed-hash"></code>
+        </div>
+        <div class="inline">
+          <button class="btn ghost small" id="copy-revealed" data-t="copy"></button>
+          <a class="btn small" href="/verify" data-t="fair_open_verify"></a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/fairness.js"></script>
+</body>
+</html>
