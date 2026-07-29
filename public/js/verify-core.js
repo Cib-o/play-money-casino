@@ -60,6 +60,37 @@ export function slotTable(rtp) {
   return { outs, cum, q };
 }
 
+// ── Roulette (mirrors src/games/roulette.js) ──────────────────────
+export const ROULETTE_RED = new Set([
+  1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+]);
+const ROULETTE_PAYOUTS = {
+  straight: 36, split: 18, red: 2, black: 2, odd: 2, even: 2, dozen: 3, column: 3,
+};
+
+function rouletteBetWins(bet, n) {
+  switch (bet.type) {
+    case 'straight': return n === bet.selection;
+    case 'split': return bet.selection[0] === n || bet.selection[1] === n;
+    case 'red': return ROULETTE_RED.has(n);
+    case 'black': return n >= 1 && !ROULETTE_RED.has(n);
+    case 'odd': return n >= 1 && n % 2 === 1;
+    case 'even': return n >= 1 && n % 2 === 0;
+    case 'dozen': return n >= 1 && Math.floor((n - 1) / 12) === bet.selection;
+    case 'column': return n >= 1 && (n - 1) % 3 === bet.selection;
+    default: return false;
+  }
+}
+
+export async function verifyRoulette({ serverSeed, clientSeed, nonce, bets = [] }) {
+  const number = Math.floor((await uniform(serverSeed, clientSeed, nonce, 0)) * 37);
+  let payout = 0;
+  for (const bet of bets) {
+    if (rouletteBetWins(bet, number)) payout += bet.amount * ROULETTE_PAYOUTS[bet.type];
+  }
+  return { number, payout };
+}
+
 export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
   const { outs, cum } = slotTable(rtp);
   const u = await uniform(serverSeed, clientSeed, nonce, 0);

@@ -468,6 +468,112 @@ footer.site {
 .auth-card .sub { text-align: center; color: var(--muted); font-size: 13.5px; }
 .auth-card .btn { width: 100%; margin-top: 6px; }
 
+/* ── Roulette ───────────────────────────────────────────────────── */
+.roulette-area { display: flex; flex-direction: column; gap: 14px; }
+
+.roulette-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 84px;
+}
+.pocket {
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-num);
+  font-size: 26px;
+  font-weight: 800;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+  transition: background 0.2s ease;
+}
+.pocket.spin { border-color: var(--accent); }
+.pocket.red { background: #b02843; border-color: #d64f6b; }
+.pocket.black { background: #1d2338; border-color: #3a4260; }
+.pocket.green { background: #0f7a4d; border-color: #23a86f; }
+
+.roulette-board {
+  display: grid;
+  grid-template-columns: 44px repeat(12, minmax(28px, 1fr)) 48px;
+  gap: 4px;
+}
+.outside-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+.outside-grid .rcell:nth-child(-n + 3) { grid-column: span 4; }
+.outside-grid .rcell:nth-child(n + 4) { grid-column: span 3; }
+
+.rcell {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-family: var(--font-num);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+  transition: filter 0.12s ease;
+}
+.rcell:hover { filter: brightness(1.25); }
+.rcell.red { background: #8e2036; }
+.rcell.black { background: #171c30; }
+.rcell.green { background: #0e6340; }
+.rcell.outside { background: var(--bg-raise); color: var(--muted); font-family: var(--font-text); }
+.rcell.outside.red { background: #8e2036; color: var(--text); }
+.rcell.outside.black { background: #171c30; color: var(--text); }
+.rcell.has-bet { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rcell.split-first { outline: 2px dashed var(--violet); outline-offset: 1px; }
+
+.bets-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.bet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.bet-row span { flex: 1; }
+.bet-row.won { border-color: rgba(61, 220, 132, 0.6); background: rgba(61, 220, 132, 0.08); }
+.bet-remove {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+.bet-remove:hover { color: var(--lose); }
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.total-row strong { color: var(--accent-2); font-size: 16px; }
+.grow { flex: 1; }
+.strip .cell.pocket-red { background: rgba(176, 40, 67, 0.35); color: #ff9db1; }
+.strip .cell.pocket-black { background: var(--panel-2); color: var(--text); }
+.strip .cell.pocket-green { background: rgba(15, 122, 77, 0.4); color: #6fe3ae; }
+
 /* ── Verifier ───────────────────────────────────────────────────── */
 .results-duo {
   display: grid;

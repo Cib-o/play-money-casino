@@ -159,6 +159,12 @@ multiplier) is decided first from the calibrated table; reels are then
 chosen to display it — a losing round can never render as three of a
 kind.
 
+### Roulette
+European single-zero with the classic paytable (house edge exactly
+1/37 for every bet type). Straight, split (adjacency-validated),
+red/black, odd/even, dozens and columns; several bets per spin, with
+the round total checked against the bet limits.
+
 ## Backup
 
 ```bash

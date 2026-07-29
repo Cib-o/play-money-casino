@@ -4,6 +4,7 @@ import { initShell, state, el } from '../shell.js';
 // this list and the games the server reports as enabled.
 const GAME_META = [
   { key: 'slots', href: '/slots', art: '🎰', hint: 'hint_slots' },
+  { key: 'roulette', href: '/roulette', art: '🎡', hint: 'hint_roulette' },
 ];
 
 const ctx = await initShell({ requireAuth: true });

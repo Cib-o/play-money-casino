@@ -23,8 +23,11 @@ export function buildApp({ db, config, logger = false }) {
     logger,
     trustProxy: true,
     // additionalProperties:false must REJECT unknown fields, not
-    // silently strip them (ajv's default removeAdditional would).
-    ajv: { customOptions: { removeAdditional: false } },
+    // silently strip them (ajv's default removeAdditional would), and
+    // coerceTypes must stay scalar: the default 'array' mode mutates
+    // oneOf branches (turning a straight-bet selection 17 into [17])
+    // even when another branch already matched.
+    ajv: { customOptions: { removeAdditional: false, coerceTypes: true } },
   });
 
   app.register(fastifyCookie);

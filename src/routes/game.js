@@ -3,6 +3,7 @@ import { readSettings, nowISO } from '../db.js';
 import { AppError } from '../errors.js';
 import { getOrCreateSeed, setClientSeed, rotateSeed } from '../seeds.js';
 import * as slots from '../games/slots.js';
+import * as roulette from '../games/roulette.js';
 
 const PAGE_SIZE = 20;
 
@@ -123,6 +124,68 @@ export function registerGameRoutes(app) {
           bet: req.body.bet,
         });
         return { payout: out.payout, outcome: { rtp: settings.rtp, mult: out.mult, reels: out.reels } };
+      });
+    },
+  );
+
+  // ── roulette ──────────────────────────────────────────────────────
+  const ROULETTE_BET = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['type', 'amount'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['straight', 'split', 'red', 'black', 'odd', 'even', 'dozen', 'column'],
+      },
+      amount: { type: 'integer', minimum: 1, maximum: 1000000000 },
+      selection: {
+        oneOf: [
+          { type: 'integer', minimum: 0, maximum: 36 },
+          {
+            type: 'array',
+            items: { type: 'integer', minimum: 0, maximum: 36 },
+            minItems: 2,
+            maxItems: 2,
+          },
+        ],
+      },
+    },
+  };
+
+  app.post(
+    '/api/game/roulette/spin',
+    {
+      preHandler: app.requireUser,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['bets'],
+          properties: {
+            bets: { type: 'array', minItems: 1, maxItems: 30, items: ROULETTE_BET },
+          },
+        },
+      },
+    },
+    async (req) => {
+      const settings = readSettings(db);
+      requireEnabled(settings, 'roulette');
+      for (const bet of req.body.bets) {
+        if (!roulette.validateBet(bet)) throw new AppError(400, 'err_validation');
+      }
+      // The min/max limits apply to the round's total stake; each
+      // individual bet already has a schema minimum of 1.
+      const total = req.body.bets.reduce((sum, bet) => sum + bet.amount, 0);
+      checkBet(total, settings);
+      return resolveRound(req.user.id, 'roulette', total, (seed) => {
+        const number = roulette.spinNumber({
+          serverSeed: seed.server_seed,
+          clientSeed: seed.client_seed,
+          nonce: seed.nonce,
+        });
+        const { payout, results } = roulette.settle(req.body.bets, number);
+        return { payout, outcome: { number, bets: results } };
       });
     },
   );

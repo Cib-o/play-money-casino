@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_roulette">რულეტკა</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="title_roulette"></h1>
+    </div>
+    <div class="game-layout">
+      <section class="panel roulette-area">
+        <div class="roulette-result">
+          <div class="pocket" id="pocket">·</div>
+          <div class="result-line" id="result"></div>
+        </div>
+        <div class="roulette-board" id="board"></div>
+        <div class="outside-grid" id="outside"></div>
+        <p class="muted hint" id="split-hint" data-t="roulette_pick_adjacent" hidden></p>
+      </section>
+      <aside class="panel bet-box">
+        <div>
+          <label data-t="roulette_chip"></label>
+          <div class="chip-row" id="chips"></div>
+        </div>
+        <label class="chip-toggle">
+          <input type="checkbox" id="split-mode">
+          <span data-t="roulette_split_mode"></span>
+        </label>
+        <div>
+          <label data-t="roulette_bets"></label>
+          <div id="bets-list" class="bets-list"></div>
+          <div class="total-row">
+            <span data-t="roulette_total"></span>
+            <strong class="num" id="total">0</strong>
+          </div>
+        </div>
+        <div class="inline">
+          <button class="btn big grow" id="spin-btn" data-t="btn_spin"></button>
+          <button class="btn ghost" id="clear-btn" data-t="roulette_clear"></button>
+        </div>
+        <div>
+          <label data-t="last_results"></label>
+          <div class="strip" id="strip"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/roulette.js"></script>
+</body>
+</html>
