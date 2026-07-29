@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = {
   default_balance: '1000',
   default_locale: 'ka',
   site_name: 'Lucky Lion',
+  game_slots: '1',
 };
 
 // "before"/"after" are quoted because BEFORE and AFTER are SQL keywords.
