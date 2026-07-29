@@ -1,0 +1,28 @@
+# systemd unit for the play-money casino.
+#   sudo cp deploy/play-money-casino.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now play-money-casino
+
+[Unit]
+Description=Play-money casino (credits are play points, not money)
+After=network.target
+
+[Service]
+Type=simple
+User=casino
+Group=casino
+WorkingDirectory=/opt/play-money-casino
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+
+# Hardening — the process only ever writes under data/ and backups/.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/play-money-casino/data /opt/play-money-casino/backups
+
+[Install]
+WantedBy=multi-user.target
