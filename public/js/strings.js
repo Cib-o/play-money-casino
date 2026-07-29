@@ -138,7 +138,23 @@ export const STRINGS = {
     prof_change_password: "Change password",
     prof_current: "Current password",
     prof_new: "New password (min 8 characters)",
-    prof_password_changed: "Password changed."
+    prof_password_changed: "Password changed.",
+    title_verify: "Verify",
+    verify_heading: "Round verifier",
+    verify_explain: "Runs entirely in your browser with WebCrypto — nothing is sent to the server. Paste a revealed server seed, the client seed and the nonce, and recompute the result yourself.",
+    verify_round_id: "Round ID (optional)",
+    verify_load: "Load",
+    verify_game: "Game",
+    verify_server_seed: "Server seed (revealed)",
+    verify_compute: "Recompute",
+    verify_hash_of_seed: "Hash of this seed",
+    verify_computed: "Computed result",
+    verify_recorded: "Recorded result",
+    verify_match: "MATCH — the round checks out",
+    verify_mismatch: "MISMATCH — the data does not reproduce this round",
+    verify_not_revealed: "The server seed for this round is not revealed yet — rotate your seed on the Fairness page first.",
+    verify_hash_match: "matches the recorded commitment",
+    verify_hash_mismatch: "does NOT match the recorded commitment"
   },
   ka: {
     footer_notice: "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -275,6 +291,22 @@ export const STRINGS = {
     prof_change_password: "პაროლის შეცვლა",
     prof_current: "მიმდინარე პაროლი",
     prof_new: "ახალი პაროლი (მინ. 8 სიმბოლო)",
-    prof_password_changed: "პაროლი შეიცვალა."
+    prof_password_changed: "პაროლი შეიცვალა.",
+    title_verify: "შემოწმება",
+    verify_heading: "რაუნდის შემოწმება",
+    verify_explain: "მთლიანად შენს ბრაუზერში მუშაობს WebCrypto-თი — სერვერზე არაფერი იგზავნება. ჩასვი გამჟღავნებული სერვერის სიდი, კლიენტის სიდი და ნონსი და შედეგი შენით გადათვალე.",
+    verify_round_id: "რაუნდის ID (არასავალდებულო)",
+    verify_load: "ჩატვირთვა",
+    verify_game: "თამაში",
+    verify_server_seed: "სერვერის სიდი (გამჟღავნებული)",
+    verify_compute: "გადათვლა",
+    verify_hash_of_seed: "ამ სიდის ჰეში",
+    verify_computed: "გამოთვლილი შედეგი",
+    verify_recorded: "ჩაწერილი შედეგი",
+    verify_match: "ემთხვევა — რაუნდი სწორია",
+    verify_mismatch: "არ ემთხვევა — მონაცემები ამ რაუნდს არ იმეორებს",
+    verify_not_revealed: "ამ რაუნდის სერვერის სიდი ჯერ არ არის გამჟღავნებული — ჯერ სიდი შეცვალე სამართლიანობის გვერდზე.",
+    verify_hash_match: "ემთხვევა ჩაწერილ ვალდებულებას",
+    verify_hash_mismatch: "არ ემთხვევა ჩაწერილ ვალდებულებას"
   }
 };

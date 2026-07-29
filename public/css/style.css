@@ -468,6 +468,37 @@ footer.site {
 .auth-card .sub { text-align: center; color: var(--muted); font-size: 13.5px; }
 .auth-card .btn { width: 100%; margin-top: 6px; }
 
+/* ── Verifier ───────────────────────────────────────────────────── */
+.results-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+@media (max-width: 640px) {
+  .results-duo { grid-template-columns: 1fr; }
+}
+.result-card {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 14px;
+  font-size: 17px;
+  text-align: center;
+}
+.hash-verdict { font-size: 12.5px; font-weight: 700; }
+.verdict {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-s);
+  font-weight: 800;
+  text-align: center;
+  font-size: 16px;
+}
+.verdict.ok { background: rgba(61, 220, 132, 0.14); color: var(--win); }
+.verdict.bad { background: rgba(255, 77, 109, 0.14); color: var(--lose); }
+#output { margin-top: 20px; }
+
 /* ── Key/value blocks (fairness, verify) ────────────────────────── */
 .kv { display: flex; flex-direction: column; gap: 5px; margin: 0 0 16px; }
 .kv .k { font-size: 12.5px; color: var(--muted); }
