@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_admin_players">მოთამაშეები — დეშბორდი</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="adm_players_heading"></h1>
+      <input id="search" class="search-input" type="text" data-tp="adm_search_ph" maxlength="64">
+    </div>
+
+    <section class="panel" id="create-panel">
+      <h2 data-t="adm_create_heading"></h2>
+      <form id="create-form" class="form-grid" novalidate>
+        <div class="form-row">
+          <label for="c-username" data-t="adm_username"></label>
+          <input id="c-username" type="text" required maxlength="32" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label for="c-display" data-t="adm_display_name"></label>
+          <input id="c-display" type="text" maxlength="40" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label for="c-balance" data-t="adm_start_balance"></label>
+          <input id="c-balance" type="number" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <label for="c-locale" data-t="adm_language"></label>
+          <select id="c-locale">
+            <option value="ka" data-t="lang_ka"></option>
+            <option value="en" data-t="lang_en"></option>
+          </select>
+        </div>
+        <div class="full">
+          <button class="btn" type="submit" data-t="adm_create_btn"></button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel table-panel">
+      <table class="data">
+        <thead>
+          <tr>
+            <th data-t="adm_username"></th>
+            <th data-t="adm_display_name"></th>
+            <th class="num" data-t="balance_label"></th>
+            <th class="num" data-t="adm_col_rounds"></th>
+            <th data-t="adm_col_status"></th>
+            <th data-t="adm_col_actions"></th>
+          </tr>
+        </thead>
+        <tbody id="players-body"></tbody>
+      </table>
+      <p id="players-empty" class="muted" data-t="adm_no_players" hidden></p>
+    </section>
+  </main>
+
+  <dialog id="creds-dialog">
+    <div class="dialog-head">
+      <h2 data-t="adm_creds_heading"></h2>
+      <button class="btn ghost small" data-t="close" data-close></button>
+    </div>
+    <p class="muted" data-t="adm_creds_once"></p>
+    <pre class="copy-block" id="creds-block"></pre>
+    <button class="btn" id="creds-copy" data-t="copy"></button>
+  </dialog>
+
+  <dialog id="balance-dialog">
+    <div class="dialog-head">
+      <h2 data-t="adm_balance_heading"></h2>
+      <button class="btn ghost small" data-t="close" data-close></button>
+    </div>
+    <p class="muted num" id="bal-current"></p>
+    <form id="balance-form" novalidate>
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="b-set" data-t="adm_set_to"></label>
+          <input id="b-set" type="number" min="0" step="1">
+        </div>
+        <div class="form-row">
+          <label for="b-delta" data-t="adm_delta"></label>
+          <input id="b-delta" type="number" step="1">
+        </div>
+        <div class="form-row full">
+          <label for="b-note" data-t="adm_note"></label>
+          <input id="b-note" type="text" maxlength="200">
+        </div>
+      </div>
+      <button class="btn" type="submit" data-t="adm_apply"></button>
+    </form>
+    <h2 class="adj-heading" data-t="adm_recent_adj"></h2>
+    <table class="data">
+      <thead>
+        <tr>
+          <th data-t="adm_col_when"></th>
+          <th class="num" data-t="adm_col_before"></th>
+          <th class="num" data-t="adm_col_delta"></th>
+          <th class="num" data-t="adm_col_after"></th>
+          <th data-t="adm_col_note"></th>
+        </tr>
+      </thead>
+      <tbody id="adj-body"></tbody>
+    </table>
+  </dialog>
+
+  <dialog id="reset-dialog">
+    <div class="dialog-head">
+      <h2 data-t="adm_act_reset"></h2>
+      <button class="btn ghost small" data-t="close" data-close></button>
+    </div>
+    <p class="muted" data-t="adm_creds_once"></p>
+    <pre class="copy-block" id="reset-block"></pre>
+    <button class="btn" id="reset-copy" data-t="copy"></button>
+  </dialog>
+
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/admin-players.js"></script>
+</body>
+</html>

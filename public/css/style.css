@@ -468,6 +468,29 @@ footer.site {
 .auth-card .sub { text-align: center; color: var(--muted); font-size: 13.5px; }
 .auth-card .btn { width: 100%; margin-top: 6px; }
 
+/* ── Admin ──────────────────────────────────────────────────────── */
+.search-input { max-width: 260px; }
+.hint { font-size: 12px; margin: 6px 0 0; }
+.adj-heading { margin-top: 24px; font-size: 15px; }
+.actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+.table-panel { padding: 10px 14px; }
+#create-panel { margin-bottom: 18px; }
+#balance-dialog { width: min(560px, 94vw); }
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.chip-toggle input { accent-color: var(--accent); margin: 0; }
+
 /* ── Slots ──────────────────────────────────────────────────────── */
 .slot-machine {
   display: flex;
