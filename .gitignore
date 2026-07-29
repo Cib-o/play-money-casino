@@ -1,0 +1,17 @@
+node_modules/
+data/
+backups/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+*.env
+.claude/
+.cursor/
+.aider*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

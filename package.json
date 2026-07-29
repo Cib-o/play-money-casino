@@ -1,0 +1,25 @@
+{
+  "name": "play-money-casino",
+  "version": "1.0.0",
+  "description": "Self-hosted play-money casino simulator with admin-managed credit balances. Credits are score points with no monetary value.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "create-admin": "node scripts/create-admin.mjs",
+    "demo-data": "node scripts/demo-data.mjs",
+    "polish-georgian": "node scripts/polish-georgian.mjs",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/formbody": "^8.0.2",
+    "@fastify/static": "^10.1.2",
+    "better-sqlite3": "^13.0.2",
+    "fastify": "^5.10.0"
+  }
+}
