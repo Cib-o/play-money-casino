@@ -105,6 +105,43 @@ export async function verifyDice({ serverSeed, clientSeed, nonce, rtp, target, d
   return { r, win, mult };
 }
 
+// ── Blackjack (mirrors src/games/blackjack.js) ────────────────────
+export function bjHandTotal(cards) {
+  let total = 0;
+  let aces = 0;
+  for (const card of cards) {
+    const r = card % 13;
+    total += r === 0 ? 11 : r >= 9 ? 10 : r + 1;
+    if (r === 0) aces++;
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return { total, soft: aces > 0 };
+}
+
+function bjIsBlackjack(cards) {
+  return cards.length === 2 && bjHandTotal(cards).total === 21;
+}
+
+export async function verifyBlackjack({ serverSeed, clientSeed, nonce, actions = [] }) {
+  const draw = async (cursor) =>
+    Math.floor((await uniform(serverSeed, clientSeed, nonce, cursor)) * 52);
+  const player = [await draw(0), await draw(2)];
+  const dealer = [await draw(1), await draw(3)];
+  let cursor = 4;
+  if (!bjIsBlackjack(player) && !bjIsBlackjack(dealer)) {
+    for (const action of actions) {
+      if (action === 'hit' || action === 'double') player.push(await draw(cursor++));
+    }
+    if (bjHandTotal(player).total <= 21) {
+      while (bjHandTotal(dealer).total < 17) dealer.push(await draw(cursor++));
+    }
+  }
+  return { player, dealer };
+}
+
 export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
   const { outs, cum } = slotTable(rtp);
   const u = await uniform(serverSeed, clientSeed, nonce, 0);

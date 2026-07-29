@@ -172,6 +172,15 @@ rationals, and the payout multiplier is `RTP / p` — the expected
 return equals the configured RTP by construction, up to ~48× at the
 extremes.
 
+### Blackjack
+Single hand vs the dealer, infinite deck, dealer stands on soft 17,
+blackjack pays 3:2, double on the first two cards. An open hand lives
+in the database with the bet already staked, so it survives restarts
+and resumes on reload; seed rotation is blocked while a hand is open
+(revealing the seed would expose the dealer's next cards). Card order
+is fixed, so a finished hand replays from the seeds and the action
+list alone.
+
 ## Backup
 
 ```bash

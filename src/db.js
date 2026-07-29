@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS = {
   game_slots: '1',
   game_roulette: '1',
   game_dice: '1',
+  game_blackjack: '1',
 };
 
 // "before"/"after" are quoted because BEFORE and AFTER are SQL keywords.
@@ -71,6 +72,12 @@ CREATE TABLE IF NOT EXISTS seeds (
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS blackjack_states (
+  user_id    TEXT PRIMARY KEY REFERENCES users(id),
+  state_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_rounds_user_time ON rounds (user_id, created_at DESC);

@@ -4,12 +4,14 @@ import { uniform as serverUniform, sha256hex as serverSha256 } from '../src/rng.
 import { spin } from '../src/games/slots.js';
 import { spinNumber, settle } from '../src/games/roulette.js';
 import { roll } from '../src/games/dice.js';
+import { makeDraw, replay } from '../src/games/blackjack.js';
 import {
   uniform as clientUniform,
   sha256Hex as clientSha256,
   verifySlots,
   verifyRoulette,
   verifyDice,
+  verifyBlackjack,
 } from '../public/js/verify-core.js';
 
 // The browser verifier must mirror the server byte for byte. Running
@@ -66,6 +68,23 @@ test('verifyDice reproduces the server roll, win flag and multiplier', async () 
       assert.equal(client.r, server.r);
       assert.equal(client.win, server.win);
       assert.equal(client.mult, server.mult);
+    }
+  }
+});
+
+test('verifyBlackjack replays server hands for every action pattern', async () => {
+  const patterns = [[], ['stand'], ['hit', 'stand'], ['hit', 'hit', 'stand'], ['double']];
+  for (const actions of patterns) {
+    for (let nonce = 0; nonce < 60; nonce++) {
+      const server = replay({
+        draw: makeDraw({ serverSeed: SEED, clientSeed: 'bj', nonce }),
+        actions,
+      });
+      const client = await verifyBlackjack({
+        serverSeed: SEED, clientSeed: 'bj', nonce, actions,
+      });
+      assert.deepEqual(client.player, server.player, `player ${actions} nonce ${nonce}`);
+      assert.deepEqual(client.dealer, server.dealer, `dealer ${actions} nonce ${nonce}`);
     }
   }
 });

@@ -10,6 +10,7 @@ import { AppError } from './errors.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerGameRoutes } from './routes/game.js';
+import { registerBlackjackRoutes } from './routes/blackjack.js';
 import { registerPageRoutes } from './routes/pages.js';
 
 const SESSION_COOKIE = 'sid';
@@ -117,6 +118,7 @@ export function buildApp({ db, config, logger = false }) {
   registerAuthRoutes(app);
   registerAdminRoutes(app);
   registerGameRoutes(app);
+  registerBlackjackRoutes(app);
   if (hasPublic) registerPageRoutes(app);
 
   return app;

@@ -41,6 +41,13 @@ export function registerGameRoutes(app) {
   );
 
   app.post('/api/seed/rotate', auth, async (req) => {
+    // Rotating reveals the server seed; while a blackjack round is
+    // open that seed determines the dealer's next cards, so the
+    // reveal must wait until the hand is finished.
+    const openRound = db
+      .prepare('SELECT user_id FROM blackjack_states WHERE user_id = ?')
+      .get(req.user.id);
+    if (openRound) throw new AppError(400, 'err_round_in_progress');
     const result = rotateSeed(db, req.user.id);
     return {
       revealed_server_seed: result.revealedServerSeed,

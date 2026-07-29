@@ -6,6 +6,7 @@ const GAME_META = [
   { key: 'slots', href: '/slots', art: '🎰', hint: 'hint_slots' },
   { key: 'roulette', href: '/roulette', art: '🎡', hint: 'hint_roulette' },
   { key: 'dice', href: '/dice', art: '🎲', hint: 'hint_dice' },
+  { key: 'blackjack', href: '/blackjack', art: '🃏', hint: 'hint_blackjack' },
 ];
 
 const ctx = await initShell({ requireAuth: true });

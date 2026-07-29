@@ -6,6 +6,8 @@ import {
   verifySlots,
   verifyRoulette,
   verifyDice,
+  verifyBlackjack,
+  bjHandTotal,
   ROULETTE_RED,
 } from '../verify-core.js';
 
@@ -78,6 +80,31 @@ const GAMES = {
         text: `${out.r.toFixed(2)} ${arrow} ${target} · ${out.win ? '✓' : '✗'}`,
         matches:
           out.r === recorded.outcome.roll && out.win === recorded.outcome.win,
+      };
+    },
+  },
+  blackjack: {
+    usesRtp: false,
+    describe(outcome) {
+      const cards = (hand) =>
+        hand
+          .map((c) => `${['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'][c % 13]}${['♠', '♥', '♦', '♣'][Math.floor(c / 13)]}`)
+          .join(' ');
+      return `${cards(outcome.player)} (${bjHandTotal(outcome.player).total}) — ${cards(outcome.dealer)} (${bjHandTotal(outcome.dealer).total})`;
+    },
+    async compute({ serverSeed, clientSeed, nonce }) {
+      if (!recorded || recorded.game !== 'blackjack') return { text: '—', matches: null };
+      const out = await verifyBlackjack({
+        serverSeed,
+        clientSeed,
+        nonce,
+        actions: recorded.outcome.actions,
+      });
+      return {
+        text: this.describe(out),
+        matches:
+          JSON.stringify(out.player) === JSON.stringify(recorded.outcome.player) &&
+          JSON.stringify(out.dealer) === JSON.stringify(recorded.outcome.dealer),
       };
     },
   },

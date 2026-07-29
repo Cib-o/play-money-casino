@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_blackjack">ბლექჯეკი</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="title_blackjack"></h1>
+      <span class="muted" data-t="hint_blackjack"></span>
+    </div>
+    <div class="game-layout">
+      <section class="panel bj-table">
+        <div class="hand-block">
+          <div class="hand-label">
+            <span data-t="bj_dealer"></span>
+            <strong class="num total-badge" id="dealer-total"></strong>
+          </div>
+          <div class="hand" id="dealer-hand"></div>
+        </div>
+        <div class="result-line" id="result"></div>
+        <div class="hand-block">
+          <div class="hand-label">
+            <span data-t="bj_you"></span>
+            <strong class="num total-badge" id="player-total"></strong>
+          </div>
+          <div class="hand" id="player-hand"></div>
+        </div>
+        <div class="bj-actions" id="actions" hidden>
+          <button class="btn big" id="hit-btn" data-t="btn_hit"></button>
+          <button class="btn big ghost" id="stand-btn" data-t="btn_stand"></button>
+          <button class="btn big violet" id="double-btn" data-t="btn_double"></button>
+        </div>
+      </section>
+      <aside class="panel bet-box">
+        <div id="bet-control"></div>
+        <button class="btn big" id="deal-btn" data-t="btn_deal"></button>
+        <div>
+          <label data-t="last_results"></label>
+          <div class="strip" id="strip"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/blackjack.js"></script>
+</body>
+</html>

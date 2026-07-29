@@ -183,7 +183,21 @@ export const STRINGS = {
     dice_over: "Over",
     dice_chance: "Win chance",
     dice_mult: "Payout multiplier",
-    btn_roll: "Roll"
+    btn_roll: "Roll",
+    game_blackjack: "Blackjack",
+    hint_blackjack: "3:2 · dealer stands on soft 17",
+    title_blackjack: "Blackjack",
+    bj_dealer: "Dealer",
+    bj_you: "You",
+    btn_deal: "Deal",
+    btn_hit: "Hit",
+    btn_stand: "Stand",
+    btn_double: "Double",
+    bj_blackjack: "Blackjack!",
+    bj_push: "Push",
+    bj_win: "You win",
+    bj_lose: "Dealer wins",
+    bj_bust: "Bust"
   },
   ka: {
     footer_notice: "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -365,6 +379,20 @@ export const STRINGS = {
     dice_over: "მეტი",
     dice_chance: "მოგების შანსი",
     dice_mult: "გასაცემის მამრავლი",
-    btn_roll: "გაგორება"
+    btn_roll: "გაგორება",
+    game_blackjack: "ბლექჯეკი",
+    hint_blackjack: "3:2 · დილერი ჩერდება რბილ 17-ზე",
+    title_blackjack: "ბლექჯეკი",
+    bj_dealer: "დილერი",
+    bj_you: "შენ",
+    btn_deal: "დარიგება",
+    btn_hit: "კიდევ",
+    btn_stand: "გაჩერება",
+    btn_double: "გაორმაგება",
+    bj_blackjack: "ბლექჯეკი!",
+    bj_push: "ფრე",
+    bj_win: "მოიგე",
+    bj_lose: "დილერის მოგებაა",
+    bj_bust: "გადაცილება"
   }
 };
