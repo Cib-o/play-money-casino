@@ -762,3 +762,30 @@ details[open] summary { margin-bottom: 8px; }
 @media (max-width: 480px) {
   .reel { width: 76px; height: 88px; font-size: 40px; }
 }
+
+/* ── Mobile / small screens ─────────────────────────────────────── */
+@media (max-width: 720px) {
+  .container { padding: 0 12px; }
+  .shell-header { flex-wrap: wrap; gap: 10px; min-height: 0; padding: 8px 0; }
+  nav.main-nav { order: 3; width: 100%; }
+  .header-right { gap: 8px; }
+  .page-head { margin: 16px 0 12px; }
+  h1 { font-size: 22px; }
+
+  /* wide data tables scroll horizontally instead of overflowing */
+  .table-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-panel .data { min-width: 520px; }
+
+  /* two-column forms and dialogs stack */
+  .form-grid { grid-template-columns: 1fr; }
+  dialog { width: min(94vw, 480px); padding: 16px; }
+  .actions-cell { flex-direction: column; }
+  .actions-cell .btn { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .btn { padding: 9px 14px; }
+  .btn.big { padding: 12px 18px; font-size: 16px; }
+  .brand { font-size: 16px; }
+  .balance-chip { padding: 5px 10px; }
+}

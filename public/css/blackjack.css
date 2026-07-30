@@ -420,11 +420,33 @@
 }
 
 @media (max-width: 720px) {
-  .bj-felt { min-height: 360px; padding: 12px; }
-  .pcard { width: 42px; height: 60px; }
-  .pcard-pip { font-size: 22px; }
-  .bj-hand .pcard:not(:first-child) { margin-left: -24px; }
+  .bj-felt { min-height: 340px; padding: 10px; border-width: 8px; }
+  .pcard { width: 40px; height: 56px; }
+  .pcard-pip { font-size: 20px; }
+  .pcard-corner { font-size: 11px; }
+  .bj-hand { min-height: 58px; }
+  .bj-hand .pcard:not(:first-child) { margin-left: -22px; }
   .bj-seat:nth-child(1), .bj-seat:nth-child(7),
-  .bj-seat:nth-child(2), .bj-seat:nth-child(6) { transform: none; }
-  .bj-dock { justify-content: center; }
+  .bj-seat:nth-child(2), .bj-seat:nth-child(6),
+  .bj-seat:nth-child(3), .bj-seat:nth-child(5) { transform: none; }
+  .bj-seats { gap: 3px; left: 1%; right: 1%; }
+  .bj-nameplate { font-size: 10px; padding: 2px 7px 2px 2px; }
+  .bj-betspot { width: 34px; height: 34px; }
+  .bj-dock { justify-content: center; gap: 10px; }
+  .bj-arc-text { font-size: 10px; top: 44%; }
+  .chip-coin { width: 32px; height: 32px; font-size: 10px; }
+}
+
+@media (max-width: 480px) {
+  .bj-felt { min-height: 300px; }
+  .pcard { width: 32px; height: 46px; border-radius: 5px; }
+  .pcard-pip { font-size: 15px; }
+  .pcard-corner { font-size: 9px; }
+  .pcard-corner b { font-size: 9px; }
+  .bj-hand { min-height: 48px; }
+  .bj-hand .pcard:not(:first-child) { margin-left: -18px; }
+  .bj-avatar { width: 16px; height: 16px; }
+  .bj-shoe, .bj-discard { width: 46px; height: 34px; }
+  .bj-act .ring { width: 44px; height: 44px; font-size: 18px; }
+  .bj-status { font-size: 12px; padding: 5px 12px; }
 }

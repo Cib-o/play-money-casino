@@ -6,6 +6,10 @@
 // per browser. crypto.getRandomValues (not Math.random) fills the
 // noise buffer, keeping the no-Math.random property intact.
 
+// Global loudness multiplier applied to every effect, on top of the
+// master gain — tuned up so the table is audible without straining.
+const VOL = 1.6;
+
 let ctx = null;
 let master = null;
 let noiseBuf = null;
@@ -17,7 +21,7 @@ function context() {
   if (!AC) return null;
   ctx = new AC();
   master = ctx.createGain();
-  master.gain.value = 0.5;
+  master.gain.value = 0.85;
   master.connect(ctx.destination);
   return ctx;
 }
@@ -49,7 +53,7 @@ function tone(c, { freq, to, dur = 0.12, type = 'sine', gain = 0.18, when = 0 })
   osc.frequency.setValueAtTime(freq, t0);
   if (to) osc.frequency.exponentialRampToValueAtTime(to, t0 + dur);
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.008);
+  g.gain.exponentialRampToValueAtTime(gain * VOL, t0 + 0.008);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   osc.connect(g).connect(master);
   osc.start(t0);
@@ -64,7 +68,7 @@ function noise(c, { dur = 0.2, gain = 0.18, type = 'highpass', freq = 1200, when
   filt.type = type;
   filt.frequency.value = freq;
   const g = c.createGain();
-  g.gain.setValueAtTime(gain, t0);
+  g.gain.setValueAtTime(gain * VOL, t0);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   src.connect(filt).connect(g).connect(master);
   src.start(t0);
