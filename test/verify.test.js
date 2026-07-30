@@ -4,7 +4,7 @@ import { uniform as serverUniform, sha256hex as serverSha256 } from '../src/rng.
 import { spin } from '../src/games/slots.js';
 import { spinNumber, settle } from '../src/games/roulette.js';
 import { roll } from '../src/games/dice.js';
-import { makeDraw, replay } from '../src/games/blackjack.js';
+import { makeDraw, replay, dealerPlay } from '../src/games/blackjack.js';
 import {
   uniform as clientUniform,
   sha256Hex as clientSha256,
@@ -12,6 +12,7 @@ import {
   verifyRoulette,
   verifyDice,
   verifyBlackjack,
+  verifyBlackjackTable,
 } from '../public/js/verify-core.js';
 
 // The browser verifier must mirror the server byte for byte. Running
@@ -85,6 +86,29 @@ test('verifyBlackjack replays server hands for every action pattern', async () =
       });
       assert.deepEqual(client.player, server.player, `player ${actions} nonce ${nonce}`);
       assert.deepEqual(client.dealer, server.dealer, `dealer ${actions} nonce ${nonce}`);
+    }
+  }
+});
+
+test('verifyBlackjackTable mirrors the shared-table per-seat dealing', async () => {
+  const seed = '3'.repeat(64);
+  const cardAt = (tag, nonce, cur) => Math.floor(serverUniform(seed, `table:${tag}`, nonce, cur) * 52);
+  const patterns = [[], ['stand'], ['hit', 'stand'], ['double'], ['hit', 'hit', 'stand']];
+  for (const seat of [0, 1, 3, 6]) {
+    for (const actions of patterns) {
+      for (let nonce = 1; nonce < 30; nonce++) {
+        const player = [cardAt(String(seat), nonce, 0), cardAt(String(seat), nonce, 1)];
+        let cur = 1;
+        for (const a of actions) if (a === 'hit' || a === 'double') player.push(cardAt(String(seat), nonce, ++cur));
+        const dealer = dealerPlay(
+          [cardAt('d', nonce, 0), cardAt('d', nonce, 1)],
+          (c) => cardAt('d', nonce, c),
+          2,
+        ).hand;
+        const out = await verifyBlackjackTable({ serverSeed: seed, nonce, seat, actions });
+        assert.deepEqual(out.player, player, `player seat ${seat} ${actions} n${nonce}`);
+        assert.deepEqual(out.dealer, dealer, `dealer seat ${seat} ${actions} n${nonce}`);
+      }
     }
   }
 });

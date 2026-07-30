@@ -11,6 +11,8 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerGameRoutes } from './routes/game.js';
 import { registerBlackjackRoutes } from './routes/blackjack.js';
+import { registerTableRoutes } from './routes/table.js';
+import { createBlackjackTable } from './blackjack-table.js';
 import { registerPageRoutes } from './routes/pages.js';
 
 const SESSION_COOKIE = 'sid';
@@ -119,6 +121,18 @@ export function buildApp({ db, config, logger = false }) {
   registerAdminRoutes(app);
   registerGameRoutes(app);
   registerBlackjackRoutes(app);
+
+  // The shared table is created here but its round loop is started
+  // explicitly by the server entrypoint (not during tests), and is
+  // stopped when the app closes so no timers leak.
+  const table = createBlackjackTable(db);
+  app.decorate('blackjackTable', table);
+  registerTableRoutes(app, table);
+  app.addHook('onClose', (instance, done) => {
+    table.stop();
+    done();
+  });
+
   if (hasPublic) registerPageRoutes(app);
 
   return app;

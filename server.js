@@ -15,6 +15,7 @@ const app = buildApp({ db, config, logger: true });
 
 try {
   await app.listen({ port: config.port, host: config.host });
+  app.blackjackTable.start(); // begin the shared table's round loop
 } catch (err) {
   app.log.error(err);
   process.exit(1);

@@ -7,6 +7,7 @@ import {
   verifyRoulette,
   verifyDice,
   verifyBlackjack,
+  verifyBlackjackTable,
   bjHandTotal,
   ROULETTE_RED,
 } from '../verify-core.js';
@@ -94,12 +95,16 @@ const GAMES = {
     },
     async compute({ serverSeed, clientSeed, nonce }) {
       if (!recorded || recorded.game !== 'blackjack') return { text: '—', matches: null };
-      const out = await verifyBlackjack({
-        serverSeed,
-        clientSeed,
-        nonce,
-        actions: recorded.outcome.actions,
-      });
+      // shared-table rounds use per-seat streams; single-hand rounds
+      // use the interleaved player/dealer stream.
+      const out = recorded.outcome.table
+        ? await verifyBlackjackTable({
+            serverSeed,
+            nonce,
+            seat: recorded.outcome.seat,
+            actions: recorded.outcome.actions,
+          })
+        : await verifyBlackjack({ serverSeed, clientSeed, nonce, actions: recorded.outcome.actions });
       return {
         text: this.describe(out),
         matches:

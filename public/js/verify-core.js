@@ -142,6 +142,24 @@ export async function verifyBlackjack({ serverSeed, clientSeed, nonce, actions =
   return { player, dealer };
 }
 
+// Shared-table blackjack (mirrors src/blackjack-table.js). Each seat
+// draws its own independent stream `table:<seat>` and the dealer draws
+// `table:d`, so a seat reproduces without needing the other seats.
+const TABLE_CLIENT_SEED = 'table';
+export async function verifyBlackjackTable({ serverSeed, nonce, seat, actions = [] }) {
+  const draw = async (tag, cursor) =>
+    Math.floor((await uniform(serverSeed, `${TABLE_CLIENT_SEED}:${tag}`, nonce, cursor)) * 52);
+  const player = [await draw(seat, 0), await draw(seat, 1)];
+  let cur = 1;
+  for (const action of actions) {
+    if (action === 'hit' || action === 'double') player.push(await draw(seat, ++cur));
+  }
+  const dealer = [await draw('d', 0), await draw('d', 1)];
+  let dc = 1;
+  while (bjHandTotal(dealer).total < 17) dealer.push(await draw('d', ++dc));
+  return { player, dealer };
+}
+
 export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
   const { outs, cum } = slotTable(rtp);
   const u = await uniform(serverSeed, clientSeed, nonce, 0);
