@@ -1,0 +1,430 @@
+/* Live blackjack table — original CSS/SVG art, no external assets.
+   Loaded only by blackjack.html on top of the shared style.css. */
+
+.bj-stage {
+  --felt: #0f6b46;
+  --felt-dark: #0a4c31;
+  --rim: #3a2416;
+  --rim-light: #5a3a22;
+  --gold: #e7c35a;
+  position: relative;
+  margin: 18px 0 26px;
+  padding: 18px 12px 22px;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #123024 0%, #0a1a14 55%, #070d0b 100%);
+  overflow: hidden;
+}
+
+/* ── the felt ─────────────────────────────────────────────────── */
+.bj-felt {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 11;
+  min-height: 420px;
+  border-radius: 50% 50% 46% 46% / 62% 62% 40% 40%;
+  background:
+    radial-gradient(120% 120% at 50% 0%, var(--felt) 0%, var(--felt-dark) 78%);
+  border: 14px solid var(--rim);
+  box-shadow:
+    inset 0 0 0 2px rgba(231, 195, 90, 0.25),
+    inset 0 18px 60px rgba(0, 0, 0, 0.45),
+    0 26px 60px rgba(0, 0, 0, 0.55);
+  padding: 20px;
+}
+
+.bj-arc-text {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(231, 195, 90, 0.7);
+  font-weight: 700;
+  font-size: clamp(11px, 1.7vw, 15px);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.bj-arc-text .rule { display: block; font-size: 0.8em; opacity: 0.7; margin-top: 3px; }
+
+/* ── dealer zone ──────────────────────────────────────────────── */
+.bj-dealer-zone {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.bj-dealer-plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(231, 195, 90, 0.35);
+  border-radius: 999px;
+  padding: 4px 14px 4px 5px;
+  color: #fff;
+  font-size: 13px;
+}
+.bj-dealer-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3, transparent 60%), hsl(38 45% 45%);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.bj-dealer-hand {
+  display: flex;
+  gap: 6px;
+  min-height: 78px;
+  justify-content: center;
+}
+.bj-dealer-total {
+  min-width: 30px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--gold);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* shoe (card supply) and discard tray flank the dealer */
+.bj-shoe, .bj-discard {
+  position: absolute;
+  top: 6px;
+  width: 62px;
+  height: 46px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+.bj-shoe {
+  right: 12px;
+  background: linear-gradient(160deg, #2a3550, #141a2b);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), 0 4px 10px rgba(0, 0, 0, 0.4);
+  transform: perspective(200px) rotateX(24deg);
+}
+.bj-shoe::after {
+  content: '';
+  position: absolute;
+  inset: 6px 6px 6px auto;
+  width: 22px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(45deg, #6a48ff 0 4px, #4a2fbf 4px 8px);
+}
+.bj-shoe.shuffling { animation: shoe-shuffle 0.5s ease-in-out infinite; }
+@keyframes shoe-shuffle {
+  0%, 100% { transform: perspective(200px) rotateX(24deg) translateX(0); }
+  50% { transform: perspective(200px) rotateX(24deg) translateX(-4px) rotate(-2deg); }
+}
+.bj-discard {
+  left: 12px;
+  background: linear-gradient(160deg, #33230f, #1c1206);
+  transform: perspective(200px) rotateX(24deg);
+}
+.bj-shoe-count {
+  position: absolute;
+  top: 54px;
+  right: 12px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-num);
+}
+
+/* ── status banner ────────────────────────────────────────────── */
+.bj-status {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 16px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.bj-status .count {
+  font-family: var(--font-num);
+  color: var(--gold);
+  min-width: 20px;
+  text-align: center;
+}
+.bj-status.hidden { display: none; }
+
+/* ── seats ────────────────────────────────────────────────────── */
+.bj-seats {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(4px, 1vw, 14px);
+}
+.bj-seat {
+  flex: 1 1 0;
+  max-width: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+/* fake the arc: outer seats sit higher than the centre */
+.bj-seat:nth-child(1), .bj-seat:nth-child(7) { transform: translateY(-34px); }
+.bj-seat:nth-child(2), .bj-seat:nth-child(6) { transform: translateY(-18px); }
+.bj-seat:nth-child(3), .bj-seat:nth-child(5) { transform: translateY(-6px); }
+
+.bj-hand {
+  display: flex;
+  min-height: 74px;
+  margin-bottom: 2px;
+}
+.bj-hand .pcard:not(:first-child) { margin-left: -30px; }
+
+.bj-betspot {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.bj-seat.mine .bj-betspot { border-color: var(--gold); }
+.bj-seat.mine.can-bet .bj-betspot { cursor: pointer; box-shadow: 0 0 16px rgba(231, 195, 90, 0.5); }
+.bj-seat.mine.can-bet .bj-betspot:hover { transform: scale(1.08); }
+.bj-chip-stack {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+.bj-chip-stack .chip-coin:not(:first-child) { margin-bottom: -30px; }
+.bj-bet-amount {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  min-height: 15px;
+}
+
+.bj-nameplate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 3px 10px 3px 3px;
+  font-size: 11.5px;
+  color: #e9ecf7;
+}
+.bj-seat.mine .bj-nameplate { border-color: var(--gold); color: #fff; }
+.bj-seat.active .bj-nameplate { box-shadow: 0 0 0 2px var(--gold); }
+.bj-seat.empty .bj-nameplate { opacity: 0.5; }
+.bj-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: radial-gradient(circle at 35% 30%, #ffffff55, transparent 60%), hsl(var(--hue, 200) 50% 45%);
+}
+.bj-seat-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-num);
+  letter-spacing: 0.5px;
+}
+.bj-seat-total {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--gold);
+}
+.bj-seat-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 999px;
+  min-height: 16px;
+}
+.bj-seat-badge.win { background: rgba(61, 220, 132, 0.2); color: var(--win); }
+.bj-seat-badge.lose { background: rgba(255, 77, 109, 0.18); color: var(--lose); }
+.bj-seat-badge.push { background: rgba(255, 255, 255, 0.14); color: #dfe3f2; }
+.bj-seat-badge.bj { background: rgba(231, 195, 90, 0.25); color: var(--gold); }
+
+/* ── playing cards ────────────────────────────────────────────── */
+.pcard {
+  position: relative;
+  width: 52px;
+  height: 74px;
+  border-radius: 7px;
+  background: linear-gradient(150deg, #ffffff, #eef0f4);
+  color: #16202b;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+  flex: 0 0 auto;
+  font-weight: 800;
+  animation: deal-in 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.pcard.red { color: #c01530; }
+.pcard-corner {
+  position: absolute;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+}
+.pcard-corner b { display: block; font-size: 12px; font-weight: 700; }
+.pcard-corner.tl { top: 5px; left: 5px; }
+.pcard-corner.br { bottom: 5px; right: 5px; transform: rotate(180deg); }
+.pcard-pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+}
+.pcard.down { background: none; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45); }
+.pcard-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  border: 2px solid #d9c88a;
+  background:
+    repeating-linear-gradient(45deg, #6a48ff 0 6px, #4a2fbf 6px 12px);
+}
+.pcard.flip-in { animation: flip-in 0.35s ease both; }
+
+@keyframes deal-in {
+  from { opacity: 0; transform: translate(-40px, -90px) rotate(-14deg) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes flip-in {
+  from { transform: rotateY(90deg) scale(0.96); }
+  to { transform: rotateY(0) scale(1); }
+}
+
+/* ── chips ────────────────────────────────────────────────────── */
+.chip-coin {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 0 0 3px rgba(0, 0, 0, 0.12);
+  background: var(--chip, #5a6b8c);
+  flex: 0 0 auto;
+  user-select: none;
+}
+.chip-1 { --chip: #6b7280; }
+.chip-5 { --chip: #d43a4a; }
+.chip-25 { --chip: #2f9e57; }
+.chip-100 { --chip: #23272f; }
+.chip-500 { --chip: #6a48ff; }
+.chip-1000 { --chip: #d99a2b; }
+
+/* ── control dock ─────────────────────────────────────────────── */
+.bj-dock {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 6px 0;
+}
+.bj-rack { display: flex; gap: 8px; align-items: center; }
+.bj-rack .chip-coin { cursor: pointer; transition: transform 0.12s ease; }
+.bj-rack .chip-coin:hover { transform: translateY(-3px); }
+.bj-rack .chip-coin.selected { outline: 3px solid var(--gold); outline-offset: 2px; transform: translateY(-4px); }
+
+.bj-actions { display: flex; gap: 10px; }
+.bj-act {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: #cfd4e6;
+  font-size: 11px;
+  font-weight: 700;
+}
+.bj-act .ring {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border: 3px solid currentColor;
+  background: rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.bj-act.hit { color: #3ddc84; }
+.bj-act.stand { color: #ff6d84; }
+.bj-act.double { color: #9b7bff; }
+.bj-act:hover .ring { transform: translateY(-3px); background: rgba(0, 0, 0, 0.45); }
+.bj-act:disabled { opacity: 0.35; cursor: not-allowed; }
+.bj-act:disabled .ring { transform: none; }
+
+.bj-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.bj-info strong { color: var(--accent-2); font-family: var(--font-num); }
+.bj-limits {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #cfd4e6;
+  font-size: 11.5px;
+  font-family: var(--font-num);
+}
+
+.bj-primary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .bj-felt { min-height: 360px; padding: 12px; }
+  .pcard { width: 42px; height: 60px; }
+  .pcard-pip { font-size: 22px; }
+  .bj-hand .pcard:not(:first-child) { margin-left: -24px; }
+  .bj-seat:nth-child(1), .bj-seat:nth-child(7),
+  .bj-seat:nth-child(2), .bj-seat:nth-child(6) { transform: none; }
+  .bj-dock { justify-content: center; }
+}

@@ -8,47 +8,74 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/blackjack.css">
 </head>
 <body>
   <header class="site" id="app-header"></header>
   <main class="container">
     <div class="page-head">
       <h1 data-t="title_blackjack"></h1>
-      <span class="muted" data-t="hint_blackjack"></span>
+      <span class="muted" data-t="bj_pays"></span>
     </div>
-    <div class="game-layout">
-      <section class="panel bj-table">
-        <div class="hand-block">
-          <div class="hand-label">
-            <span data-t="bj_dealer"></span>
-            <strong class="num total-badge" id="dealer-total"></strong>
+
+    <section class="bj-stage">
+      <div class="bj-felt">
+        <div class="bj-dealer-zone">
+          <div class="bj-dealer-plate">
+            <span class="bj-dealer-avatar">🎩</span>
+            <span data-t="bj_dealer_name"></span>
+            <span>·</span>
+            <span class="bj-dealer-name" id="dealer-name"></span>
           </div>
-          <div class="hand" id="dealer-hand"></div>
+          <div class="bj-dealer-hand" id="dealer-hand"></div>
+          <div class="bj-dealer-total" id="dealer-total"></div>
         </div>
-        <div class="result-line" id="result"></div>
-        <div class="hand-block">
-          <div class="hand-label">
-            <span data-t="bj_you"></span>
-            <strong class="num total-badge" id="player-total"></strong>
-          </div>
-          <div class="hand" id="player-hand"></div>
+
+        <div class="bj-discard" title="discard"></div>
+        <div class="bj-shoe" id="shoe"></div>
+        <div class="bj-shoe-count num" id="shoe-count"></div>
+
+        <div class="bj-arc-text">
+          <span data-t="title_blackjack"></span>
+          <span class="rule" data-t="bj_pays"></span>
         </div>
+
+        <div class="bj-status" id="status">
+          <span id="status-text"></span>
+          <span class="count" id="status-count"></span>
+        </div>
+
+        <div class="bj-seats" id="seats"></div>
+      </div>
+
+      <div class="bj-dock">
+        <div class="bj-rack" id="rack"></div>
+
         <div class="bj-actions" id="actions" hidden>
-          <button class="btn big" id="hit-btn" data-t="btn_hit"></button>
-          <button class="btn big ghost" id="stand-btn" data-t="btn_stand"></button>
-          <button class="btn big violet" id="double-btn" data-t="btn_double"></button>
+          <button class="bj-act hit" id="hit-btn" type="button">
+            <span class="ring">✚</span><span data-t="btn_hit"></span>
+          </button>
+          <button class="bj-act double" id="double-btn" type="button">
+            <span class="ring">×2</span><span data-t="btn_double"></span>
+          </button>
+          <button class="bj-act stand" id="stand-btn" type="button">
+            <span class="ring">✋</span><span data-t="btn_stand"></span>
+          </button>
         </div>
-      </section>
-      <aside class="panel bet-box">
-        <div id="bet-control"></div>
-        <button class="btn big" id="deal-btn" data-t="btn_deal"></button>
-        <div>
-          <label data-t="last_results"></label>
-          <div class="strip" id="strip"></div>
+
+        <div class="bj-primary">
+          <div class="bj-info">
+            <span><span data-t="bj_total_bet"></span>: <strong class="num" id="total-bet">0</strong></span>
+          </div>
+          <button class="btn ghost small" id="clear-btn" type="button" data-t="bj_clear"></button>
+          <button class="btn small" id="leave-btn" type="button" hidden data-t="bj_leave_table"></button>
         </div>
-      </aside>
-    </div>
+
+        <div class="bj-limits" id="limits"></div>
+      </div>
+    </section>
   </main>
+
   <footer class="site" id="app-footer"></footer>
   <div id="toast-root"></div>
   <script type="module" src="/js/pages/blackjack.js"></script>
