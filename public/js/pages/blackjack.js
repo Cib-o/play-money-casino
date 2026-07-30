@@ -1,6 +1,7 @@
 import { initShell, state, el, toast, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
 import { t, fmt } from '../i18n.js';
+import { sfx } from '../sound.js';
 import {
   cardEl,
   revealCard,
@@ -32,7 +33,6 @@ const TURN_SECONDS = 20;
 const SHOE_DECKS = 6;
 const RESHUFFLE_AT = 78;
 const CHIP_BASE = [1, 5, 25, 100, 500, 1000];
-const DEALER_NAMES = ['ნინო', 'ლანა', 'მარიამი', 'გიო', 'ანა', 'ლუკა', 'დათო', 'ქეთი', 'სანდრო'];
 
 const ctx = await initShell({ requireAuth: true });
 if (ctx) {
@@ -44,7 +44,6 @@ if (ctx) {
   const maxBet = state.pub.max_bet;
 
   let shoe = [];
-  let dealerName = '';
   let chipValue = CHIP_BASE.find((v) => v >= minBet && v <= maxBet) || minBet;
   let pendingBet = 0;
   let phase = 'idle';
@@ -61,10 +60,9 @@ if (ctx) {
     if (shoe.length >= RESHUFFLE_AT) return;
     shoeEl.classList.add('shuffling');
     setStatus('bj_shuffling');
+    sfx.shuffle();
     await delay(900);
     shoe = makeShoe(SHOE_DECKS);
-    dealerName = pick(DEALER_NAMES);
-    $('dealer-name').textContent = dealerName;
     shoeEl.classList.remove('shuffling');
     updateShoeCount();
   }
@@ -185,6 +183,7 @@ if (ctx) {
     if (pendingBet + chipValue > maxBet) return toast('err_bet_too_large');
     if (pendingBet + chipValue > state.me.balance) return toast('err_insufficient_balance');
     pendingBet += chipValue;
+    sfx.chip();
     renderPlayerBet();
   }
   function renderPlayerBet() {
@@ -211,6 +210,7 @@ if (ctx) {
         seat.bet = pick(CHIP_BASE.filter((v) => v <= maxBet)) || minBet;
         renderChipStack(seat.dom.stack, seat.bet);
         seat.dom.betAmount.textContent = fmt(seat.bet);
+        sfx.chip();
       }, when);
     }
 
@@ -233,6 +233,7 @@ if (ctx) {
   function appendCard(seat, card, opts) {
     const node = cardEl(card, opts);
     seat.dom.hand.append(node);
+    sfx.deal();
     return node;
   }
   function refreshSeatTotal(seat) {
@@ -291,6 +292,7 @@ if (ctx) {
       if (pass === 0) {
         dealerHandEl.append(cardEl(round.dealerUp));
         setDealerTotal([round.dealerUp]);
+        sfx.deal();
       } else {
         // the hidden value only matters when the dealer is cosmetic
         // (spectating): revealCard reads it. When the player joined,
@@ -299,6 +301,7 @@ if (ctx) {
         const hidden = joined ? round.dealerUp : round.dealerHole;
         dealerHoleEl = cardEl(hidden, { faceDown: true });
         dealerHandEl.append(dealerHoleEl);
+        sfx.deal();
       }
       await delay(160);
     }
@@ -314,9 +317,13 @@ if (ctx) {
   }
 
   // ── play phase ──────────────────────────────────────────────────
+  // Bots pause for a random "thinking" beat before each decision, so
+  // the table never feels mechanical — different every hand.
+  const think = () => delay(500 + randInt(1400));
+
   async function playBot(seat, dealerUp) {
     seat.dom.root.classList.add('active');
-    await delay(500);
+    await think();
     while (true) {
       const total = handTotal(seat.hand).total;
       if (total >= 21) break;
@@ -326,9 +333,10 @@ if (ctx) {
       seat.hand.push(card);
       appendCard(seat, card);
       refreshSeatTotal(seat);
-      await delay(600);
       if (action === 'double') break;
+      await think();
     }
+    await delay(200 + randInt(350));
     seat.dom.root.classList.remove('active');
   }
 
@@ -354,9 +362,9 @@ if (ctx) {
     playerChoiceResolver = null;
     r(choice);
   }
-  $('hit-btn').addEventListener('click', () => resolvePlayer('hit'));
-  $('stand-btn').addEventListener('click', () => resolvePlayer('stand'));
-  $('double-btn').addEventListener('click', () => resolvePlayer('double'));
+  $('hit-btn').addEventListener('click', () => { sfx.button(); resolvePlayer('hit'); });
+  $('stand-btn').addEventListener('click', () => { sfx.button(); resolvePlayer('stand'); });
+  $('double-btn').addEventListener('click', () => { sfx.button(); resolvePlayer('double'); });
 
   function renderPlayerHandFrom(cards) {
     // append only newly dealt cards
@@ -431,11 +439,13 @@ if (ctx) {
         faceEl.classList.add('flip-in');
         dealerHoleEl.replaceWith(faceEl);
         dealerHoleEl = null;
+        sfx.flip();
       }
       setDealerTotal(dealer.slice(0, 2));
       await delay(450);
       for (let i = 2; i < dealer.length; i++) {
         dealerHandEl.append(cardEl(dealer[i]));
+        sfx.deal();
         setDealerTotal(dealer.slice(0, i + 1));
         await delay(500);
       }
@@ -443,6 +453,7 @@ if (ctx) {
       if (dealerHoleEl) {
         revealCard(dealerHoleEl);
         dealerHoleEl = null;
+        sfx.flip();
       }
       dealer = [round.dealerUp, round.dealerHole];
       setDealerTotal(dealer);
@@ -450,6 +461,7 @@ if (ctx) {
       dealerDraw(dealer, () => {
         const c = drawCosmetic();
         dealerHandEl.append(cardEl(c));
+        sfx.deal();
         return c;
       });
       setDealerTotal(dealer);
@@ -487,7 +499,14 @@ if (ctx) {
     const dealerTotal = round.dealerTotal;
     for (const seat of seats) {
       if (seat.mine) {
-        if (joined && round.playerRound) showBadge(seat, round.playerRound.outcome.result);
+        if (joined && round.playerRound) {
+          const r = round.playerRound.outcome.result;
+          showBadge(seat, r);
+          if (r === 'blackjack') sfx.big();
+          else if (r === 'win') sfx.win();
+          else if (r === 'lose') sfx.lose();
+          else sfx.push();
+        }
       } else if (seat.kind === 'bot' && seat.hand.length) {
         showBadge(seat, botResult(seat, dealer, dealerTotal));
       }

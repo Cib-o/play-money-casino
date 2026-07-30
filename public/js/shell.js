@@ -1,5 +1,6 @@
 import { api, ApiError } from './api.js';
 import { applyI18n, detectLocale, getLocale, setLocale, t, fmt } from './i18n.js';
+import { sfx } from './sound.js';
 
 export const state = { me: null, pub: null };
 
@@ -62,6 +63,7 @@ const HEADER_HTML = `
     <div class="balance-chip" id="balance-chip" hidden>
       <span data-t="balance_label"></span><strong class="num" id="balance-value"></strong>
     </div>
+    <button type="button" class="btn ghost small icon-btn" id="sfx-btn">🔊</button>
     <div class="lang-switch" role="group">
       <button type="button" data-lang="ka">ქარ</button>
       <button type="button" data-lang="en">ENG</button>
@@ -117,6 +119,20 @@ function renderChrome() {
     for (const btn of header.querySelectorAll('.lang-switch button')) {
       btn.setAttribute('aria-pressed', String(btn.dataset.lang === getLocale()));
       btn.addEventListener('click', () => switchLocale(btn.dataset.lang));
+    }
+
+    const sfxBtn = document.getElementById('sfx-btn');
+    if (sfxBtn) {
+      const paint = () => {
+        sfxBtn.textContent = sfx.isOn() ? '🔊' : '🔇';
+        sfxBtn.title = t('sound');
+        sfxBtn.setAttribute('aria-label', t('sound'));
+      };
+      paint();
+      sfxBtn.addEventListener('click', () => {
+        sfx.toggle();
+        paint();
+      });
     }
 
     const logout = document.getElementById('logout-btn');

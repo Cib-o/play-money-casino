@@ -2,6 +2,7 @@ import { initShell, state, el, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
 import { fmt } from '../i18n.js';
 import { createBetControl } from '../bet.js';
+import { sfx } from '../sound.js';
 
 // Client-side display mapping only. Symbol indexes come from the
 // server; the paytable mirrors the fixed multiplier ladder.
@@ -80,6 +81,7 @@ if (ctx) {
     result.textContent = '';
     const stake = bet.value;
     startShuffle();
+    sfx.spin();
     const started = Date.now();
     try {
       const res = await api('/api/game/slots/spin', { method: 'POST', body: { bet: stake } });
@@ -90,6 +92,7 @@ if (ctx) {
       for (let i = 0; i < reels.length; i++) {
         reels[i].classList.remove('spinning');
         reels[i].textContent = SYMBOLS[shown[i]];
+        sfx.reelStop();
         await sleep(140);
       }
       const { mult } = res.round.outcome;
@@ -97,9 +100,12 @@ if (ctx) {
         for (const reel of reels) reel.classList.add('hit');
         result.textContent = `${mult}× · +${fmt(res.round.payout)}`;
         result.className = 'result-line win-text';
+        if (mult >= 25) sfx.big();
+        else sfx.win();
       } else {
         result.textContent = `−${fmt(stake)}`;
         result.className = 'result-line lose-text';
+        sfx.lose();
       }
       results.unshift({ mult });
       if (results.length > 12) results.pop();

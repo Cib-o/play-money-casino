@@ -2,6 +2,7 @@ import { initShell, state, el, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
 import { fmt, getLocale } from '../i18n.js';
 import { createBetControl } from '../bet.js';
+import { sfx } from '../sound.js';
 
 const ctx = await initShell({ requireAuth: true });
 
@@ -74,6 +75,7 @@ if (ctx) {
     // Cosmetic number cycle while the request is in flight.
     let step = 0;
     const display = $('roll-display');
+    sfx.roll();
     const timer = setInterval(() => {
       step = (step * 7 + 13) % 10000;
       display.textContent = (step / 100).toFixed(2);
@@ -96,9 +98,12 @@ if (ctx) {
       if (out.win) {
         line.textContent = `+${fmt(res.round.payout)}`;
         line.className = 'result-line win-text';
+        if (res.round.payout >= stake * 5) sfx.big();
+        else sfx.win();
       } else {
         line.textContent = `−${fmt(stake)}`;
         line.className = 'result-line lose-text';
+        sfx.lose();
       }
       results.unshift({ roll: out.roll, win: out.win });
       if (results.length > 12) results.pop();

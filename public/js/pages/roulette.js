@@ -1,6 +1,7 @@
 import { initShell, state, el, toast, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
 import { t, fmt } from '../i18n.js';
+import { sfx } from '../sound.js';
 
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 const CHIP_VALUES = [1, 5, 10, 25, 100];
@@ -132,6 +133,7 @@ if (ctx) {
     const existing = bets.find((b) => betKey(b) === key);
     if (existing) existing.amount += chip;
     else bets.push({ ...partial, amount: chip });
+    sfx.chip();
     renderBets();
   }
 
@@ -211,6 +213,7 @@ if (ctx) {
     // sequence — the outcome is decided server-side).
     let step = 0;
     pocket.className = 'pocket spin';
+    sfx.spin();
     const timer = setInterval(() => {
       step = (step + 7) % 37;
       pocket.textContent = String(step);
@@ -232,9 +235,12 @@ if (ctx) {
       if (payout > 0) {
         line.textContent = `+${fmt(payout)}`;
         line.className = 'result-line win-text';
+        if (payout >= total * 5) sfx.big();
+        else sfx.win();
       } else {
         line.textContent = `−${fmt(total)}`;
         line.className = 'result-line lose-text';
+        sfx.lose();
       }
       const winners = new Set(
         res.round.outcome.bets.filter((b) => b.win).map((b) => betKey(b)),

@@ -20,6 +20,13 @@
 
 * { box-sizing: border-box; }
 
+/* Enlarge the whole interface so it reads comfortably without the
+   browser's own Ctrl+= zoom. zoom scales every px uniformly — exactly
+   like browser zoom — so layouts keep working. Eased off on small
+   screens to avoid horizontal scrolling. */
+html { zoom: 1.2; }
+@media (max-width: 760px) { html { zoom: 1.05; } }
+
 html, body {
   margin: 0;
   min-height: 100%;
@@ -133,6 +140,12 @@ nav.main-nav a.active {
 @keyframes bump {
   40% { transform: scale(1.12); }
   100% { transform: scale(1); }
+}
+
+.icon-btn {
+  padding: 6px 10px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .lang-switch {
