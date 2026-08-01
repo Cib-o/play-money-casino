@@ -19,15 +19,31 @@ export function registerTableRoutes(app, table) {
         body: {
           type: 'object',
           additionalProperties: false,
-          required: ['bet'],
-          properties: { bet: { type: 'integer', minimum: 1, maximum: 1000000000 } },
+          required: ['seat'],
+          properties: { seat: { type: 'integer', minimum: 0, maximum: 6 } },
         },
       },
     },
     async (req) => {
       if (!readSettings(db).games.blackjack) throw new AppError(403, 'err_game_disabled');
-      return table.join(req.user, req.body.bet);
+      return table.sit(req.user, req.body.seat);
     },
+  );
+
+  app.post(
+    '/api/game/blackjack/bet',
+    {
+      preHandler: app.requireUser,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['amount'],
+          properties: { amount: { type: 'integer', minimum: 0, maximum: 1000000000 } },
+        },
+      },
+    },
+    async (req) => table.bet(req.user, req.body.amount),
   );
 
   app.post('/api/game/blackjack/leave', auth, async (req) => table.leave(req.user));

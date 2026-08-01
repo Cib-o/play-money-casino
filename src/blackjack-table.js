@@ -219,10 +219,14 @@ export function createBlackjackTable(db) {
   });
 
   function closeBetting() {
-    // charge and seat everyone who committed a bet; bots always play
+    // charge and seat everyone who committed a valid bet; bots always play
+    const settings = readSettings(db);
     for (const seat of state.seats) {
       if (seat.kind === 'player') {
-        if (seat.bet <= 0) continue; // sitting this round out
+        if (seat.bet < settings.minBet) {
+          seat.bet = 0; // below the minimum → sit this round out
+          continue;
+        }
         if (!chargeInitial(seat)) {
           seat.bet = 0; // could not afford — sit out
         }
@@ -423,23 +427,40 @@ export function createBlackjackTable(db) {
     };
   }
 
-  function join(user, bet) {
+  // Take a specific empty seat (or move to one). Betting/amount is a
+  // separate step, so a player picks their spot first, then bets.
+  function sit(user, seatIndex) {
     if (state.phase !== 'betting') throw new AppError(400, 'err_betting_closed');
-    const settings = readSettings(db);
-    if (!Number.isInteger(bet) || bet < settings.minBet) throw new AppError(400, 'err_bet_too_small');
-    if (bet > settings.maxBet) throw new AppError(400, 'err_bet_too_large');
-    const balance = stmts.balance.get(user.id)?.balance ?? 0;
-    if (bet > balance) throw new AppError(400, 'err_insufficient_balance');
-    let seat = seatOf(user.id);
-    if (!seat) {
-      seat = state.seats.find((s) => s.kind === 'empty');
-      if (!seat) throw new AppError(400, 'err_table_full');
-      Object.assign(seat, emptySeat(seat.index));
-      seat.kind = 'player';
-      seat.userId = user.id;
-      seat.name = maskedName();
+    if (!Number.isInteger(seatIndex) || seatIndex < 0 || seatIndex >= SEAT_COUNT) {
+      throw new AppError(400, 'err_validation');
     }
-    seat.bet = bet;
+    const current = seatOf(user.id);
+    if (current && current.index === seatIndex) return snapshot(user);
+    const target = state.seats[seatIndex];
+    if (target.kind !== 'empty') throw new AppError(400, 'err_seat_taken');
+    if (current) Object.assign(current, emptySeat(current.index)); // moving resets the bet
+    Object.assign(target, emptySeat(seatIndex));
+    target.kind = 'player';
+    target.userId = user.id;
+    target.name = maskedName();
+    target.lastSeen = Date.now();
+    state.version++;
+    return snapshot(user);
+  }
+
+  // Set the bet on the seat the player already holds. Amounts may build
+  // up below the minimum while placing chips; sub-minimum bets simply
+  // sit the round out at deal time and are never charged.
+  function bet(user, amount) {
+    if (state.phase !== 'betting') throw new AppError(400, 'err_betting_closed');
+    const seat = seatOf(user.id);
+    if (!seat) throw new AppError(400, 'err_no_seat');
+    const settings = readSettings(db);
+    if (!Number.isInteger(amount) || amount < 0) throw new AppError(400, 'err_validation');
+    if (amount > settings.maxBet) throw new AppError(400, 'err_bet_too_large');
+    const balance = stmts.balance.get(user.id)?.balance ?? 0;
+    if (amount > balance) throw new AppError(400, 'err_insufficient_balance');
+    seat.bet = amount;
     seat.lastSeen = Date.now();
     state.version++;
     return snapshot(user);
@@ -498,5 +519,5 @@ export function createBlackjackTable(db) {
     clearTimers();
   }
 
-  return { snapshot, join, leave, action, start, stop, SEAT_COUNT };
+  return { snapshot, sit, bet, leave, action, start, stop, SEAT_COUNT };
 }

@@ -132,6 +132,10 @@ export const sfx = {
     const c = ready();
     if (c) tone(c, { freq: 440, dur: 0.16, type: 'sine', gain: 0.12 });
   },
+  tick(urgent = false) {
+    const c = ready();
+    if (c) tone(c, { freq: urgent ? 1100 : 820, dur: 0.05, type: 'square', gain: 0.16 });
+  },
   isOn() {
     return enabled;
   },

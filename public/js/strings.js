@@ -46,6 +46,8 @@ export const STRINGS = {
       "err_betting_closed": "Betting is closed for this round.",
       "err_table_full": "The table is full — try the next round.",
       "err_not_your_turn": "It's not your turn.",
+      "err_seat_taken": "That seat is taken.",
+      "err_no_seat": "Pick a seat first.",
       "title_login": "Sign in",
       "login_heading": "Sign in",
       "login_sub": "Use the credentials your administrator gave you.",
@@ -227,7 +229,9 @@ export const STRINGS = {
       "bj_bet_btn": "Place bet",
       "bj_pick_chip": "Tap a chip to bet",
       "bj_sitting_out": "Sitting out — place a bet to play",
-      "bj_your_seat": "You"
+      "bj_your_seat": "You",
+      "bj_choose_seat": "Pick a seat to join",
+      "bj_place_hint": "Pick a chip, then tap your seat"
   },
   ka: {
       "footer_notice": "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -272,6 +276,8 @@ export const STRINGS = {
       "err_betting_closed": "ამ რაუნდზე ფსონები დახურულია.",
       "err_table_full": "მაგიდა სავსეა — სცადე შემდეგ რაუნდზე.",
       "err_not_your_turn": "ახლა შენი სვლა არ არის.",
+      "err_seat_taken": "ეს ადგილი დაკავებულია.",
+      "err_no_seat": "ჯერ აირჩიე ადგილი.",
       "title_login": "შესვლა",
       "login_heading": "შესვლა",
       "login_sub": "გამოიყენე მონაცემები, რომლებიც ადმინისტრატორმა მოგცა.",
@@ -453,6 +459,8 @@ export const STRINGS = {
       "bj_bet_btn": "ფსონის დადება",
       "bj_pick_chip": "დააჭირე ჩიპს ფსონისთვის",
       "bj_sitting_out": "სიტ-აუტი — ჩასართავად დადე ფსონი",
-      "bj_your_seat": "შენ"
+      "bj_your_seat": "შენ",
+      "bj_choose_seat": "აირჩიე ადგილი მაგიდასთან",
+      "bj_place_hint": "აირჩიე ჩიპი და დააჭირე შენს ადგილს"
   }
 };

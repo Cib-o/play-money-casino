@@ -6,13 +6,12 @@ import { cardEl } from '../cards.js';
 
 // ── Live shared blackjack table (client) ──────────────────────────
 // The table lives on the server (src/blackjack-table.js) and runs on
-// its own; this page just polls a snapshot, draws it, and forwards the
-// player's intents. Refreshing resumes polling — the table never
-// restarts, and every signed-in player who sits shares it.
+// its own; this page polls a snapshot, draws it, and forwards intents.
 //
-// Betting UX: tap chips to build your bet, then "Place bet" to commit
-// (POST /sit). Clear resets, Leave stands you up. That is the only way
-// money is wagered — clicking the felt does nothing.
+// Flow: click an empty seat to sit, select a chip in the rack, then
+// tap your own seat to drop that chip — each tap raises your bet. Clear
+// resets it, Leave stands you up from your seat. Every POST returns the
+// fresh snapshot, so the table reacts immediately between polls.
 
 const CHIP_BASE = [1, 5, 25, 100, 500, 1000];
 const POLL_MS = 700;
@@ -26,15 +25,18 @@ if (ctx) {
   const canPlay = !!(state.pub && state.pub.games && state.pub.games.blackjack);
   const MIN = state.pub.min_bet;
   const MAX = state.pub.max_bet;
+  const myName = (state.me.display_name || '').trim() || state.me.username;
 
-  let pendingBet = 0;
+  let selectedChip = CHIP_BASE.find((v) => v >= MIN && v <= MAX) || MIN;
   let clockOffset = 0;
   let lastNonce = -1;
   let lastBalance = null;
   let dealerRevealed = false;
   let dealerSig = '';
   let myResultShown = -1;
+  let lastTickSecond = -1;
   let lastSnap = null;
+  let busy = false;
 
   // ── seats (built once, updated in place) ────────────────────────
   const seatsWrap = $('seats');
@@ -48,7 +50,7 @@ if (ctx) {
     const avatar = el('span', { cls: 'bj-avatar' });
     const nameEl = el('span', { cls: 'bj-seat-name' });
     const totalEl = el('span', { cls: 'bj-seat-total' });
-    const root = el('div', { cls: 'bj-seat empty' }, [
+    const root = el('div', { cls: 'bj-seat empty', attrs: { 'data-index': String(i) } }, [
       hand, badge, betspot, betAmount,
       el('div', { cls: 'bj-nameplate' }, [avatar, nameEl, totalEl]),
     ]);
@@ -56,6 +58,10 @@ if (ctx) {
     seatView.push({ root, hand, badge, stack, betAmount, avatar, nameEl, totalEl, count: 0 });
   }
   const dealerHandEl = $('dealer-hand');
+
+  // a persistent hint line in the dock
+  const hintEl = el('div', { cls: 'bj-hint' });
+  $('rack').parentElement.insertBefore(hintEl, $('rack'));
 
   function greedyChips(amount) {
     const out = [];
@@ -77,58 +83,64 @@ if (ctx) {
     return h;
   }
 
-  // ── chip rack: each chip ADDS its value to the pending bet ───────
+  // ── chip rack: click selects the active chip ────────────────────
   function buildRack() {
     const rack = $('rack');
     const values = CHIP_BASE.filter((v) => v <= MAX);
     for (const v of values.length ? values : [MIN]) {
       const coin = el('span', {
-        cls: `chip-coin chip-${v}`,
+        cls: `chip-coin chip-${v}${v === selectedChip ? ' selected' : ''}`,
         text: v >= 1000 ? '1k' : String(v),
         attrs: { role: 'button', tabindex: '0' },
       });
-      coin.addEventListener('click', () => addChip(v));
+      coin.addEventListener('click', () => {
+        selectedChip = v;
+        for (const c of rack.children) c.classList.toggle('selected', c === coin);
+        sfx.button();
+      });
       rack.append(coin);
     }
-  }
-  function addChip(v) {
-    if (!lastSnap || !lastSnap.can_bet || !canPlay) return;
-    if (pendingBet + v > MAX) return toast('err_bet_too_large');
-    if (pendingBet + v > state.me.balance) return toast('err_insufficient_balance');
-    pendingBet += v;
-    sfx.chip();
-    paintDock(lastSnap);
   }
   buildRack();
   $('limits').textContent = `${t('bj_min')}: ${fmt(MIN)}  ·  ${t('bj_max')}: ${fmt(MAX)}`;
 
-  $('clear-btn').addEventListener('click', () => {
-    pendingBet = 0;
-    if (lastSnap) paintDock(lastSnap);
-  });
-  $('sit-btn').addEventListener('click', async () => {
-    if (pendingBet < MIN) return toast('err_bet_too_small');
+  // ── seat interaction: sit on an empty seat, bet on your own ──────
+  async function post(path, body) {
+    if (busy) return;
+    busy = true;
     try {
-      await api('/api/game/blackjack/sit', { method: 'POST', body: { bet: pendingBet } });
+      render(await api(path, body ? { method: 'POST', body } : { method: 'POST' }));
+    } catch (err) {
+      toastError(err);
+    } finally {
+      busy = false;
+    }
+  }
+  seatsWrap.addEventListener('click', (e) => {
+    if (!lastSnap || lastSnap.phase !== 'betting' || !canPlay) return;
+    const seatEl = e.target.closest('.bj-seat');
+    if (!seatEl) return;
+    const idx = Number(seatEl.dataset.index);
+    const seat = lastSnap.seats[idx];
+    if (lastSnap.your_seat < 0) {
+      if (!seat.occupied) post('/api/game/blackjack/sit', { seat: idx });
+      else toast('err_seat_taken');
+    } else if (idx === lastSnap.your_seat) {
+      const next = seat.bet + selectedChip;
+      if (next > MAX) return toast('err_bet_too_large');
+      if (next > state.me.balance) return toast('err_insufficient_balance');
       sfx.chip();
-    } catch (err) {
-      toastError(err);
+      post('/api/game/blackjack/bet', { amount: next });
     }
   });
-  $('leave-btn').addEventListener('click', async () => {
-    try {
-      await api('/api/game/blackjack/leave', { method: 'POST' });
-      pendingBet = 0;
-      if (lastSnap) paintDock(lastSnap);
-    } catch (err) {
-      toastError(err);
-    }
-  });
+
+  $('clear-btn').addEventListener('click', () => post('/api/game/blackjack/bet', { amount: 0 }));
+  $('leave-btn').addEventListener('click', () => post('/api/game/blackjack/leave'));
   async function move(m) {
     sfx.button();
     for (const id of ['hit-btn', 'stand-btn', 'double-btn']) $(id).disabled = true;
     try {
-      await api('/api/game/blackjack/move', { method: 'POST', body: { move: m } });
+      render(await api('/api/game/blackjack/move', { method: 'POST', body: { move: m } }));
     } catch (err) {
       toastError(err);
     }
@@ -137,19 +149,33 @@ if (ctx) {
   $('stand-btn').addEventListener('click', () => move('stand'));
   $('double-btn').addEventListener('click', () => move('double'));
 
-  // ── status / dealer / seats ─────────────────────────────────────
-  function setStatus(snap) {
-    let remaining = null;
+  // ── status / timer ──────────────────────────────────────────────
+  function remainingSeconds(snap) {
     if (snap.phase === 'betting' || snap.phase === 'payout') {
-      remaining = Math.max(0, Math.ceil((snap.ends_at - (Date.now() + clockOffset)) / 1000));
-    } else if (snap.phase === 'acting' && snap.active_seat === snap.your_seat && snap.your_seat >= 0 && snap.turn_ends_at) {
-      remaining = Math.max(0, Math.ceil((snap.turn_ends_at - (Date.now() + clockOffset)) / 1000));
+      return Math.max(0, Math.ceil((snap.ends_at - (Date.now() + clockOffset)) / 1000));
     }
+    if (snap.phase === 'acting' && snap.active_seat === snap.your_seat && snap.your_seat >= 0 && snap.turn_ends_at) {
+      return Math.max(0, Math.ceil((snap.turn_ends_at - (Date.now() + clockOffset)) / 1000));
+    }
+    return null;
+  }
+  function setStatus(snap) {
+    const remaining = remainingSeconds(snap);
     let key = PHASE_LABEL[snap.phase] || '';
-    if (snap.phase === 'acting' && snap.active_seat === snap.your_seat && snap.your_seat >= 0) key = 'bj_your_turn';
-    $('status').classList.remove('hidden');
+    const myTurn = snap.phase === 'acting' && snap.active_seat === snap.your_seat && snap.your_seat >= 0;
+    if (myTurn) key = 'bj_your_turn';
     $('status-text').textContent = t(key);
     $('status-count').textContent = remaining === null ? '' : String(remaining);
+    const urgent = remaining !== null && remaining <= 3;
+    $('status').classList.toggle('urgent', urgent);
+    $('status').classList.toggle('has-count', remaining !== null);
+
+    // ticking sound as a betting window or your turn runs out
+    const timed = snap.phase === 'betting' || myTurn;
+    if (timed && remaining !== null && remaining <= 5 && remaining > 0) {
+      if (remaining !== lastTickSecond) sfx.tick(remaining <= 2);
+    }
+    lastTickSecond = remaining;
   }
 
   function renderDealer(snap) {
@@ -171,7 +197,8 @@ if (ctx) {
     view.root.classList.toggle('empty', !seat.occupied);
     view.root.classList.toggle('mine', seat.is_you);
     view.root.classList.toggle('active', seat.active);
-    view.nameEl.textContent = !seat.occupied ? t('bj_seat_open') : seat.is_you ? t('bj_your_seat') : seat.name;
+    // your own seat shows your username; everyone else is masked
+    view.nameEl.textContent = !seat.occupied ? t('bj_seat_open') : seat.is_you ? myName : seat.name;
     view.avatar.style.setProperty('--hue', seat.occupied ? hueFor(seat.name || String(seat.index)) : 200);
     if (seat.bet > 0) {
       renderChips(view.stack, seat.bet);
@@ -193,20 +220,21 @@ if (ctx) {
     }
   }
 
-  // ── the control dock (its own paint, so chip taps update at once)─
   function paintDock(snap) {
     const betting = snap.phase === 'betting' && canPlay;
     const seated = snap.your_seat >= 0;
+    const myBet = seated ? snap.seats[snap.your_seat].bet : 0;
     const myTurn = snap.phase === 'acting' && snap.active_seat === snap.your_seat && seated;
 
-    $('rack').style.display = betting ? '' : 'none';
-    $('sit-btn').hidden = !betting;
-    $('clear-btn').hidden = !(betting && pendingBet > 0);
+    $('rack').style.display = betting && seated ? 'flex' : 'none';
+    $('sit-btn').hidden = true; // betting is done by tapping seats now
+    $('clear-btn').hidden = !(betting && seated && myBet > 0);
     $('leave-btn').hidden = !(betting && seated);
+    $('total-bet').textContent = fmt(myBet);
 
-    $('sit-btn').textContent = pendingBet > 0 ? `${t('bj_bet_btn')} · ${fmt(pendingBet)}` : t('bj_pick_chip');
-    $('sit-btn').disabled = pendingBet < MIN;
-    $('total-bet').textContent = fmt(pendingBet || (seated ? snap.your_bet : 0));
+    if (betting && !seated) hintEl.textContent = t('bj_choose_seat');
+    else if (betting && seated && myBet === 0) hintEl.textContent = t('bj_place_hint');
+    else hintEl.textContent = '';
 
     const actions = $('actions');
     actions.hidden = !myTurn;
@@ -236,7 +264,6 @@ if (ctx) {
       lastNonce = snap.nonce;
       dealerRevealed = false;
       dealerSig = '';
-      pendingBet = 0; // new round — bet again on purpose, never auto-carried
     }
     setStatus(snap);
     renderDealer(snap);

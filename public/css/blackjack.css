@@ -161,11 +161,35 @@
 }
 .bj-status .count {
   font-family: var(--font-num);
-  color: var(--gold);
-  min-width: 20px;
-  text-align: center;
+  color: #171208;
+  background: var(--gold);
+  border-radius: 999px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  font-weight: 800;
 }
+.bj-status:not(.has-count) .count { display: none; }
+.bj-status.urgent .count {
+  background: var(--lose);
+  color: #fff;
+  animation: tick-pulse 0.5s ease-in-out infinite;
+}
+@keyframes tick-pulse { 50% { transform: scale(1.2); } }
 .bj-status.hidden { display: none; }
+
+.bj-hint {
+  width: 100%;
+  text-align: center;
+  color: var(--accent-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  min-height: 16px;
+}
 
 /* ── seats ────────────────────────────────────────────────────── */
 .bj-seats {
@@ -180,12 +204,17 @@
 }
 .bj-seat {
   flex: 1 1 0;
+  min-width: 0; /* let all seven seats shrink to fit narrow screens */
   max-width: 128px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
 }
+.bj-seat.empty { cursor: pointer; }
+.bj-seat.empty:hover .bj-nameplate { border-color: var(--gold); color: #fff; opacity: 1; }
+.bj-seat.empty:hover .bj-betspot { border-color: var(--gold); }
+.bj-seat.mine .bj-betspot { cursor: pointer; }
 /* fake the arc: outer seats sit higher than the centre */
 .bj-seat:nth-child(1), .bj-seat:nth-child(7) { transform: translateY(-34px); }
 .bj-seat:nth-child(2), .bj-seat:nth-child(6) { transform: translateY(-18px); }
@@ -365,6 +394,7 @@
 .bj-rack .chip-coin { cursor: pointer; transition: transform 0.12s ease; }
 .bj-rack .chip-coin:hover { transform: translateY(-3px); }
 .bj-rack .chip-coin:active { transform: translateY(0) scale(0.94); }
+.bj-rack .chip-coin.selected { outline: 3px solid var(--gold); outline-offset: 2px; transform: translateY(-4px); }
 
 .bj-actions { display: flex; gap: 10px; }
 .bj-act {
