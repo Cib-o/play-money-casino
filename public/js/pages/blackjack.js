@@ -323,6 +323,8 @@ if (ctx) {
       lastBalance = snap.your_balance;
       updateBalance(snap.your_balance);
     }
+    const bjBal = $('bj-balance');
+    if (bjBal) bjBal.textContent = `◆ ${fmt(snap.your_balance)}`;
     lastSnap = snap;
     fitStage(); // re-fit: card/dock changes can alter the table height
   }

@@ -90,6 +90,7 @@ body.bj-page .bj-stage {
   top: 14px;
   left: 0;
   right: 0;
+  z-index: 6; /* keep the dealer total above the centre status banner */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,23 +116,32 @@ body.bj-page .bj-stage {
   place-items: center;
   font-size: 14px;
 }
+.bj-dealer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 .bj-dealer-hand {
   display: flex;
   gap: 6px;
   min-height: 78px;
+  align-items: center;
   justify-content: center;
 }
 .bj-dealer-total {
-  min-width: 30px;
+  min-width: 34px;
   text-align: center;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.72);
   color: var(--gold);
+  border: 1px solid rgba(231, 195, 90, 0.4);
   border-radius: 999px;
-  padding: 1px 10px;
+  padding: 3px 12px;
   font-family: var(--font-num);
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 15px;
 }
+.bj-dealer-total:empty { display: none; }
 
 /* shoe (card supply) and discard tray flank the dealer */
 .bj-shoe, .bj-discard {
@@ -556,12 +566,31 @@ body.bj-page .bj-stage {
 }
 .bj-float-menu { left: 8px; }
 .bj-float-fs { right: 8px; }
+.bj-float-balance {
+  display: none;
+  position: fixed;
+  top: 8px;
+  left: 56px;
+  z-index: 70;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--accent-2);
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+}
 
 @media (max-height: 520px) {
   /* phone held sideways: hide the header for a near-fullscreen table,
      with floating buttons to open the menu (exit) or go fullscreen */
   body.bj-page header.site { display: none; }
   body.bj-page .bj-float { display: inline-flex; }
+  body.bj-page .bj-float-balance { display: inline-flex; }
   body.bj-page .page-head { display: none; }
   body.bj-page .bj-felt { min-height: 0; aspect-ratio: 16 / 7; }
   body.bj-page .bj-dock { padding: 6px 10px; gap: 5px 10px; }

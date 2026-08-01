@@ -14,6 +14,7 @@
   <header class="site" id="app-header"></header>
   <button class="bj-float bj-float-menu" id="bj-menu" type="button" aria-label="Menu">☰</button>
   <button class="bj-float bj-float-fs" id="bj-fs2" type="button" aria-label="Fullscreen">⛶</button>
+  <div class="bj-float-balance" id="bj-balance"></div>
   <main class="container">
     <div class="page-head">
       <h1 data-t="title_blackjack"></h1>
@@ -34,8 +35,10 @@
             <span class="bj-dealer-avatar">🎩</span>
             <span data-t="bj_dealer_name"></span>
           </div>
-          <div class="bj-dealer-hand" id="dealer-hand"></div>
-          <div class="bj-dealer-total" id="dealer-total"></div>
+          <div class="bj-dealer-row">
+            <div class="bj-dealer-hand" id="dealer-hand"></div>
+            <div class="bj-dealer-total" id="dealer-total"></div>
+          </div>
         </div>
 
         <div class="bj-discard" title="discard"></div>
