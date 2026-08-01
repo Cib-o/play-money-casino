@@ -227,7 +227,6 @@ if (ctx) {
     const myTurn = snap.phase === 'acting' && snap.active_seat === snap.your_seat && seated;
 
     $('rack').style.display = betting && seated ? 'flex' : 'none';
-    $('sit-btn').hidden = true; // betting is done by tapping seats now
     $('clear-btn').hidden = !(betting && seated && myBet > 0);
     $('leave-btn').hidden = !(betting && seated);
     $('total-bet').textContent = fmt(myBet);
