@@ -16,6 +16,41 @@
   overflow: hidden;
 }
 
+/* ── Full-window fit ────────────────────────────────────────────
+   The blackjack page fills the whole viewport with no scrolling: the
+   header and footer keep their size and the table (felt + controls)
+   is uniformly scaled to whatever space is left, on any device, by
+   fitStage() in the page script. */
+body.bj-page { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+body.bj-page main.container {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.bj-page .page-head { margin: 6px 0; flex: 0 0 auto; }
+body.bj-page footer.site { margin-top: 0; }
+body.bj-page .footer-inner { padding: 8px 16px 10px; gap: 2px; }
+body.bj-page .footer-inner .notice { font-size: 12px; }
+body.bj-page .footer-inner .links { display: none; }
+.bj-fit {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+body.bj-page .bj-stage {
+  width: 920px;
+  margin: 0;
+  flex: 0 0 auto;
+  transform-origin: center center;
+}
+
 /* ── the felt ─────────────────────────────────────────────────── */
 .bj-felt {
   position: relative;
@@ -466,42 +501,9 @@
 }
 .bj-seat.mine .bj-seat-total { color: #171208; }
 
-@media (max-width: 720px) {
-  .bj-dock { gap: 10px; padding: 10px; }
-  .bj-primary { width: 100%; }
-  #sit-btn { flex: 1 1 auto; }
-  .bj-actions { width: 100%; justify-content: center; }
-  .bj-stage { padding: 10px 8px 14px; }
-  .bj-felt { min-height: 300px; padding: 10px; border-width: 8px; }
-  .pcard { width: 40px; height: 56px; }
-  .pcard-pip { font-size: 20px; }
-  .pcard-corner { font-size: 11px; }
-  .bj-hand { min-height: 58px; }
-  .bj-hand .pcard:not(:first-child) { margin-left: -22px; }
-  .bj-seat:nth-child(1), .bj-seat:nth-child(7),
-  .bj-seat:nth-child(2), .bj-seat:nth-child(6),
-  .bj-seat:nth-child(3), .bj-seat:nth-child(5) { transform: none; }
-  .bj-seats { gap: 3px; left: 1%; right: 1%; }
-  .bj-nameplate { font-size: 10px; padding: 2px 7px 2px 2px; }
-  .bj-betspot { width: 34px; height: 34px; }
-  .bj-dock { justify-content: center; gap: 10px; }
-  .bj-arc-text { font-size: 10px; top: 44%; }
-  .chip-coin { width: 32px; height: 32px; font-size: 10px; }
-}
-
-@media (max-width: 480px) {
-  .bj-felt { min-height: 250px; }
-  .pcard { width: 30px; height: 44px; border-radius: 5px; }
-  .pcard-pip { font-size: 15px; }
-  .pcard-corner { font-size: 9px; }
-  .pcard-corner b { font-size: 9px; }
-  .bj-hand { min-height: 48px; }
-  .bj-hand .pcard:not(:first-child) { margin-left: -18px; }
-  .bj-avatar { width: 16px; height: 16px; }
-  .bj-shoe, .bj-discard { width: 46px; height: 34px; }
-  .bj-act .ring { width: 44px; height: 44px; font-size: 18px; }
-  .bj-status { font-size: 12px; padding: 5px 12px; }
-}
+/* The table is a single unit scaled by fitStage(), so it no longer
+   needs per-breakpoint shrink rules — one uniform scale fits every
+   screen and keeps the layout identical everywhere. */
 
 /* ── rotate-to-play gate (small screens, portrait) ──────────────── */
 .rotate-gate { display: none; }
@@ -518,15 +520,15 @@
 
 @media (max-width: 740px) and (orientation: portrait) {
   /* the felt is landscape by nature — ask phones to turn sideways */
-  .bj-stage, #fs-btn { display: none; }
+  .bj-fit, #fs-btn { display: none; }
   .rotate-gate {
     display: flex;
+    flex: 1;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
     text-align: center;
-    min-height: 55vh;
     padding: 30px 20px;
   }
 }

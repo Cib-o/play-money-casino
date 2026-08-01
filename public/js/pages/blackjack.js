@@ -116,6 +116,27 @@ if (ctx) {
     });
   }
 
+  // Scale the whole table to fill the window without scrolling, on any
+  // device. offsetWidth/offsetHeight are the pre-transform layout size,
+  // so measuring while a scale is applied is stable.
+  const fitEl = $('bj-fit');
+  const stageEl = document.querySelector('.bj-stage');
+  function fitStage() {
+    if (!fitEl || !stageEl || stageEl.offsetParent === null) return;
+    const natW = stageEl.offsetWidth;
+    const natH = stageEl.offsetHeight;
+    const availW = fitEl.clientWidth;
+    const availH = fitEl.clientHeight;
+    if (!natW || !natH || !availW || !availH) return;
+    let scale = Math.min(availW / natW, availH / natH);
+    scale = Math.max(0.35, Math.min(scale, 2.2));
+    stageEl.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', fitStage);
+  window.addEventListener('orientationchange', () => setTimeout(fitStage, 200));
+  document.addEventListener('fullscreenchange', () => setTimeout(fitStage, 120));
+  fitStage();
+
   // ── seat interaction: sit on an empty seat, bet on your own ──────
   async function post(path, body) {
     if (busy) return;
@@ -286,6 +307,7 @@ if (ctx) {
       updateBalance(snap.your_balance);
     }
     lastSnap = snap;
+    fitStage(); // re-fit: card/dock changes can alter the table height
   }
 
   async function poll() {
