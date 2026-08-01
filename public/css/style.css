@@ -25,7 +25,8 @@
    like browser zoom — so layouts keep working. Eased off on small
    screens to avoid horizontal scrolling. */
 html { zoom: 1.2; }
-@media (max-width: 760px) { html { zoom: 1.05; } }
+/* on phones keep it 1:1 so the table and controls fit the screen */
+@media (max-width: 760px) { html { zoom: 1; } }
 
 html, body {
   margin: 0;

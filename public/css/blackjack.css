@@ -350,18 +350,21 @@
 /* ── control dock ─────────────────────────────────────────────── */
 .bj-dock {
   max-width: 900px;
-  margin: 0 auto;
+  margin: 14px auto 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 6px 0;
+  justify-content: center;
+  gap: 12px 16px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
 }
-.bj-rack { display: flex; gap: 8px; align-items: center; }
+.bj-rack { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .bj-rack .chip-coin { cursor: pointer; transition: transform 0.12s ease; }
 .bj-rack .chip-coin:hover { transform: translateY(-3px); }
-.bj-rack .chip-coin.selected { outline: 3px solid var(--gold); outline-offset: 2px; transform: translateY(-4px); }
+.bj-rack .chip-coin:active { transform: translateY(0) scale(0.94); }
 
 .bj-actions { display: flex; gap: 10px; }
 .bj-act {
@@ -417,10 +420,28 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
+#sit-btn { min-width: 168px; }
+
+/* your own seat, made obvious */
+.bj-seat.mine .bj-betspot { border-color: var(--gold); border-style: solid; }
+.bj-seat.mine .bj-nameplate {
+  background: linear-gradient(135deg, var(--gold), var(--accent-2));
+  color: #171208;
+  font-weight: 800;
+  border-color: var(--gold);
+}
+.bj-seat.mine .bj-seat-total { color: #171208; }
 
 @media (max-width: 720px) {
-  .bj-felt { min-height: 340px; padding: 10px; border-width: 8px; }
+  .bj-dock { gap: 10px; padding: 10px; }
+  .bj-primary { width: 100%; }
+  #sit-btn { flex: 1 1 auto; }
+  .bj-actions { width: 100%; justify-content: center; }
+  .bj-stage { padding: 10px 8px 14px; }
+  .bj-felt { min-height: 300px; padding: 10px; border-width: 8px; }
   .pcard { width: 40px; height: 56px; }
   .pcard-pip { font-size: 20px; }
   .pcard-corner { font-size: 11px; }
@@ -438,8 +459,8 @@
 }
 
 @media (max-width: 480px) {
-  .bj-felt { min-height: 300px; }
-  .pcard { width: 32px; height: 46px; border-radius: 5px; }
+  .bj-felt { min-height: 250px; }
+  .pcard { width: 30px; height: 44px; border-radius: 5px; }
   .pcard-pip { font-size: 15px; }
   .pcard-corner { font-size: 9px; }
   .pcard-corner b { font-size: 9px; }

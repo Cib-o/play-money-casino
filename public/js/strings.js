@@ -223,7 +223,11 @@ export const STRINGS = {
       "bj_seat_open": "Open seat",
       "bj_join_hint": "Pick a chip, then tap your seat",
       "bj_total_bet": "Total bet",
-      "bj_dealer_name": "Dealer"
+      "bj_dealer_name": "Dealer",
+      "bj_bet_btn": "Place bet",
+      "bj_pick_chip": "Tap a chip to bet",
+      "bj_sitting_out": "Sitting out — place a bet to play",
+      "bj_your_seat": "You"
   },
   ka: {
       "footer_notice": "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -445,6 +449,10 @@ export const STRINGS = {
       "bj_seat_open": "თავისუფალი ადგილი",
       "bj_join_hint": "აირჩიე ჩიპი და დააჭირე შენს ადგილს",
       "bj_total_bet": "ჯამური ფსონი",
-      "bj_dealer_name": "დილერი"
+      "bj_dealer_name": "დილერი",
+      "bj_bet_btn": "ფსონის დადება",
+      "bj_pick_chip": "დააჭირე ჩიპს ფსონისთვის",
+      "bj_sitting_out": "სიტ-აუტი — ჩასართავად დადე ფსონი",
+      "bj_your_seat": "შენ"
   }
 };
