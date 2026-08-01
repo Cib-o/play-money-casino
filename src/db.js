@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = {
   default_balance: '1000',
   default_locale: 'ka',
   site_name: 'Lucky Lion',
+  blackjack_max_bots: '4',
   game_slots: '1',
   game_roulette: '1',
   game_dice: '1',
@@ -136,6 +137,7 @@ export function readSettings(db) {
     defaultBalance: Number(raw.default_balance),
     defaultLocale: raw.default_locale,
     siteName: raw.site_name,
+    maxBots: raw.blackjack_max_bots === undefined ? 4 : Number(raw.blackjack_max_bots),
     games,
   };
 }

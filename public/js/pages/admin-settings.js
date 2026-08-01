@@ -14,6 +14,7 @@ if (ctx) {
     $('s-max').value = settings.max_bet;
     $('s-balance').value = settings.default_balance;
     $('s-locale').value = settings.default_locale;
+    $('s-maxbots').value = settings.blackjack_max_bots;
 
     const wrap = $('games-toggles');
     wrap.textContent = '';
@@ -46,6 +47,7 @@ if (ctx) {
           max_bet: Number($('s-max').value),
           default_balance: Number($('s-balance').value),
           default_locale: $('s-locale').value,
+          blackjack_max_bots: Number($('s-maxbots').value),
           games,
         },
       });

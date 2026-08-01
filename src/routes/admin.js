@@ -21,6 +21,7 @@ function settingsView(db) {
     default_balance: s.defaultBalance,
     default_locale: s.defaultLocale,
     site_name: s.siteName,
+    blackjack_max_bots: s.maxBots,
     games: s.games,
   };
 }
@@ -98,12 +99,16 @@ export function registerAdminRoutes(app) {
                 display_name: { type: 'string', maxLength: 40 },
                 balance: { type: 'integer', minimum: 0, maximum: 1000000000 },
                 locale: { type: 'string', enum: ['ka', 'en'] },
+                password: { type: 'string', minLength: 8, maxLength: 200 },
               },
             },
           },
         },
         async (req, reply) => {
-          const password = generatePassword();
+          // admin may set a password, otherwise a readable one is generated
+          const password = req.body.password && req.body.password.length >= 8
+            ? req.body.password
+            : generatePassword();
           const passwordHash = hashPassword(password);
           try {
             const user = createPlayer(req.body, req.user.id, readSettings(db), passwordHash);
@@ -213,6 +218,25 @@ export function registerAdminRoutes(app) {
         },
       );
 
+      // ── delete player ───────────────────────────────────────────
+      // Removes the player and everything that references them, in one
+      // transaction. Their live table seat is freed first so the round
+      // loop never touches a user row that is about to disappear.
+      const deletePlayer = db.transaction((id) => {
+        db.prepare('DELETE FROM balance_adjustments WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM rounds WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM seeds WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM blackjack_states WHERE user_id = ?').run(id);
+        db.prepare("DELETE FROM users WHERE id = ? AND role = 'player'").run(id);
+      });
+      admin.post('/players/:id/delete', { schema: { params: ID_PARAMS } }, async (req) => {
+        const player = selectPlayer.get(req.params.id);
+        if (!player) throw new AppError(404, 'err_not_found');
+        if (app.blackjackTable) app.blackjackTable.removeUser(player.id);
+        deletePlayer(player.id);
+        return { id: player.id, deleted: true };
+      });
+
       // ── audit log ───────────────────────────────────────────────
       const PAGE_QS = {
         type: 'object',
@@ -282,6 +306,7 @@ export function registerAdminRoutes(app) {
                 default_balance: { type: 'integer', minimum: 0, maximum: 1000000000000 },
                 default_locale: { type: 'string', enum: ['ka', 'en'] },
                 site_name: { type: 'string', minLength: 1, maxLength: 40 },
+                blackjack_max_bots: { type: 'integer', minimum: 0, maximum: 6 },
                 games: { type: 'object', additionalProperties: { type: 'boolean' } },
               },
             },
@@ -308,6 +333,9 @@ export function registerAdminRoutes(app) {
           }
           if (req.body.site_name !== undefined) {
             setSetting(db, 'site_name', req.body.site_name.trim());
+          }
+          if (req.body.blackjack_max_bots !== undefined) {
+            setSetting(db, 'blackjack_max_bots', String(req.body.blackjack_max_bots));
           }
           if (req.body.games) {
             for (const [key, on] of Object.entries(req.body.games)) {

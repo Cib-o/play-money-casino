@@ -39,6 +39,10 @@
             <option value="en" data-t="lang_en"></option>
           </select>
         </div>
+        <div class="form-row full">
+          <label for="c-password" data-t="adm_password"></label>
+          <input id="c-password" type="text" maxlength="200" autocomplete="off" data-tp="adm_password_ph">
+        </div>
         <div class="full">
           <button class="btn" type="submit" data-t="adm_create_btn"></button>
         </div>
@@ -119,6 +123,16 @@
     <p class="muted" data-t="adm_creds_once"></p>
     <pre class="copy-block" id="reset-block"></pre>
     <button class="btn" id="reset-copy" data-t="copy"></button>
+  </dialog>
+
+  <dialog id="delete-dialog">
+    <div class="dialog-head">
+      <h2 data-t="adm_delete_heading"></h2>
+      <button class="btn ghost small" data-t="close" data-close></button>
+    </div>
+    <p class="muted" id="delete-who"></p>
+    <p class="lose-text" data-t="adm_delete_confirm"></p>
+    <button class="btn danger" id="delete-confirm" data-t="adm_delete_btn"></button>
   </dialog>
 
   <footer class="site" id="app-footer"></footer>

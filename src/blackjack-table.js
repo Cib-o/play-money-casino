@@ -128,6 +128,10 @@ export function createBlackjackTable(db) {
   let epoch = 0;
   let timers = new Set();
   let running = false;
+  // Bots ebb and flow like a real room: a baseline number of bots that
+  // drifts every 45–120 minutes, so some hours are busy and some quiet.
+  let botBaseline = 3;
+  let botBaselineUntil = 0;
 
   function later(ms, fn) {
     const myEpoch = epoch;
@@ -147,13 +151,45 @@ export function createBlackjackTable(db) {
     return state.seats.find((s) => s.kind === 'player' && s.userId === userId) || null;
   }
 
-  function assignBots() {
-    const empties = state.seats.filter((s) => s.kind === 'empty');
-    const target = 2 + randomInt(3); // 2–4 bots
-    for (let i = 0; i < target && empties.length; i++) {
-      const seat = empties.splice(randomInt(empties.length), 1)[0];
+  const botCount = () => state.seats.filter((s) => s.kind === 'bot').length;
+
+  function updateBotBaseline(maxBots) {
+    if (Date.now() < botBaselineUntil && botBaseline <= maxBots) return;
+    if (maxBots <= 0) {
+      botBaseline = 0;
+    } else {
+      botBaseline = 1 + randomInt(maxBots); // 1..maxBots
+      if (randomInt(100) < 30) botBaseline = 1 + randomInt(Math.min(2, maxBots)); // quieter stretch
+      botBaseline = Math.min(botBaseline, maxBots);
+    }
+    botBaselineUntil = Date.now() + (45 + randomInt(75)) * 60 * 1000;
+  }
+
+  // Bots leave, arrive and choose to bet or sit out each betting window,
+  // so the table population and participation feel human rather than a
+  // fixed set of players that always plays.
+  function manageBots(settings) {
+    botBaseline = Math.min(botBaseline, settings.maxBots);
+    for (const seat of state.seats) {
+      if (seat.kind !== 'bot') continue;
+      const over = botCount() > botBaseline;
+      if (randomInt(100) < (over ? 35 : 7)) Object.assign(seat, emptySeat(seat.index));
+    }
+    let guard = 0;
+    while (botCount() < botBaseline && guard++ < SEAT_COUNT) {
+      const empties = state.seats.filter((s) => s.kind === 'empty');
+      if (!empties.length) break;
+      if (botCount() > 0 && randomInt(100) >= 55) break; // trickle in after the first
+      const seat = empties[randomInt(empties.length)];
       seat.kind = 'bot';
       seat.name = maskedName();
+      seat.lastSeen = Date.now();
+    }
+    const opts = [5, 25, 100].filter((v) => v <= settings.maxBet);
+    for (const seat of state.seats) {
+      if (seat.kind !== 'bot') continue;
+      if (randomInt(100) < 22) seat.bet = 0; // sit this round out
+      else seat.bet = opts.length ? opts[randomInt(opts.length)] : settings.minBet;
     }
   }
 
@@ -174,22 +210,21 @@ export function createBlackjackTable(db) {
     const settings = readSettings(db);
     const now = Date.now();
     for (const seat of state.seats) {
-      if (seat.kind === 'bot') Object.assign(seat, emptySeat(seat.index));
-      else if (seat.kind === 'player') {
+      if (seat.kind === 'player') {
         // drop players who stopped polling; keep the rest seated
         if (now - seat.lastSeen > SEAT_IDLE_MS) Object.assign(seat, emptySeat(seat.index));
         else {
           resetSeatForRound(seat);
           seat.bet = 0;
         }
+      } else if (seat.kind === 'bot') {
+        // bots persist across rounds; manageBots decides who stays/plays
+        resetSeatForRound(seat);
+        seat.bet = 0;
       }
     }
-    assignBots();
-    // bots pick a cosmetic bet
-    const max = settings.maxBet;
-    for (const seat of state.seats) {
-      if (seat.kind === 'bot') seat.bet = [5, 25, 100].filter((v) => v <= max)[randomInt(3)] || settings.minBet;
-    }
+    updateBotBaseline(settings.maxBots);
+    manageBots(settings);
     const pair = newSeedPair();
     state.serverSeed = pair.serverSeed;
     state.serverSeedHash = pair.hash;
@@ -288,11 +323,22 @@ export function createBlackjackTable(db) {
   }
 
   function scheduleBot(i) {
-    later(think(), () => {
+    // occasional long "away" pause, otherwise a normal thinking beat
+    const afk = randomInt(100) < 12;
+    const wait = (afk ? 2500 : 450) + randomInt(afk ? 2600 : 1400);
+    later(wait, () => {
       if (state.activeSeat !== i) return;
       const seat = state.seats[i];
       const total = handTotal(seat.hand).total;
-      const move = total >= 21 ? 'stand' : botMove(seat.hand, state.dealer.cards[0]);
+      let move;
+      if (total >= 21) {
+        move = 'stand';
+      } else {
+        const r = randomInt(100);
+        if (r < 12) move = 'hit'; // takes a card for no reason
+        else if (r < 24) move = 'stand'; // stands early
+        else move = botMove(seat.hand, state.dealer.cards[0]); // basic strategy
+      }
       if (move === 'stand') {
         seat.actions.push('stand');
         seat.done = true;
@@ -509,6 +555,16 @@ export function createBlackjackTable(db) {
     return snapshot(user);
   }
 
+  // Called when an admin deletes a player: free their seat so the round
+  // loop never references a user row that no longer exists.
+  function removeUser(userId) {
+    const seat = seatOf(userId);
+    if (seat) {
+      Object.assign(seat, emptySeat(seat.index));
+      state.version++;
+    }
+  }
+
   function start() {
     if (running) return;
     running = true;
@@ -519,5 +575,5 @@ export function createBlackjackTable(db) {
     clearTimers();
   }
 
-  return { snapshot, sit, bet, leave, action, start, stop, SEAT_COUNT };
+  return { snapshot, sit, bet, leave, action, removeUser, start, stop, SEAT_COUNT };
 }

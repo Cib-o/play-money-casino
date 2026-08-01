@@ -41,6 +41,8 @@ if (ctx) {
     if (display) body.display_name = display;
     if ($('c-balance').value !== '') body.balance = Number($('c-balance').value);
     body.locale = $('c-locale').value;
+    const pw = $('c-password').value.trim();
+    if (pw) body.password = pw;
     try {
       const res = await api('/api/admin/players', { method: 'POST', body });
       const block = credsBlock(res.user.username, res.password, res.user.locale);
@@ -97,11 +99,31 @@ if (ctx) {
                 dataT: p.is_active ? 'adm_act_disable' : 'adm_act_enable',
                 on: { click: () => toggleActive(p) },
               }),
+              el('button', {
+                cls: 'btn ghost small', dataT: 'adm_act_delete',
+                on: { click: () => askDelete(p) },
+              }),
             ]),
           ]),
         ]),
       );
     }
+  }
+
+  // ── delete player ──────────────────────────────────────────────
+  function askDelete(p) {
+    $('delete-who').textContent = `${p.username}${p.display_name ? ` — ${p.display_name}` : ''}`;
+    $('delete-confirm').onclick = async () => {
+      try {
+        await api(`/api/admin/players/${p.id}/delete`, { method: 'POST' });
+        $('delete-dialog').close();
+        toast('adm_deleted', 'ok');
+        await loadPlayers();
+      } catch (err) {
+        toastError(err);
+      }
+    };
+    $('delete-dialog').showModal();
   }
 
   let searchTimer;
