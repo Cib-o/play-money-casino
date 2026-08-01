@@ -32,10 +32,10 @@ body.bj-page main.container {
   overflow: hidden;
 }
 body.bj-page .page-head { margin: 6px 0; flex: 0 0 auto; }
-body.bj-page footer.site { margin-top: 0; }
-body.bj-page .footer-inner { padding: 8px 16px 10px; gap: 2px; }
-body.bj-page .footer-inner .notice { font-size: 12px; }
-body.bj-page .footer-inner .links { display: none; }
+/* Footer hidden on the game page so the table gets the full height
+   (owner's request). The play-money notice still renders on every
+   other page. */
+body.bj-page footer.site { display: none; }
 .bj-fit {
   flex: 1;
   min-height: 0;
@@ -538,9 +538,10 @@ body.bj-page .bj-stage {
    it to use the width instead of leaving big side margins. */
 @media (max-height: 520px) {
   body.bj-page .page-head { display: none; }
-  body.bj-page .shell-header { min-height: 44px; }
-  body.bj-page .footer-inner { padding: 4px 12px 6px; }
-  body.bj-page .footer-inner .notice { font-size: 10.5px; }
+  body.bj-page .shell-header { min-height: 42px; }
+  /* shorter felt + a tight dock so the stage is short and scales up */
   body.bj-page .bj-felt { min-height: 0; aspect-ratio: 16 / 7; }
-  body.bj-page .bj-dock { padding: 8px 12px; }
+  body.bj-page .bj-dock { padding: 6px 10px; gap: 5px 10px; }
+  body.bj-page .bj-limits { display: none; }
+  body.bj-page .bj-hint { width: auto; font-size: 11px; }
 }
