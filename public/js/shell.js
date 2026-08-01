@@ -57,6 +57,7 @@ export async function copyText(text) {
 // ── header / footer ───────────────────────────────────────────────
 const HEADER_HTML = `
 <div class="shell-header container">
+  <button type="button" class="burger" id="burger-btn" aria-label="Menu">☰</button>
   <a class="brand" href="/"><span class="spark">◆</span> <span id="brand-name"></span></a>
   <nav class="main-nav" id="main-nav"></nav>
   <div class="header-right">
@@ -138,15 +139,87 @@ function renderChrome() {
     const logout = document.getElementById('logout-btn');
     if (state.me) {
       logout.hidden = false;
-      logout.addEventListener('click', async () => {
-        await api('/api/logout', { method: 'POST' }).catch(() => {});
-        location.href = '/login';
-      });
+      logout.addEventListener('click', doLogout);
     }
+
+    // burger + side drawer for phones and tablets
+    document.body.classList.toggle('has-menu', !!state.me);
+    const burger = document.getElementById('burger-btn');
+    if (burger) burger.addEventListener('click', openDrawer);
+    buildDrawer();
   }
 
   const footer = document.getElementById('app-footer');
   if (footer) footer.innerHTML = FOOTER_HTML;
+}
+
+async function doLogout() {
+  await api('/api/logout', { method: 'POST' }).catch(() => {});
+  location.href = '/login';
+}
+
+function openDrawer() {
+  document.getElementById('drawer')?.classList.add('open');
+  document.getElementById('drawer-backdrop')?.classList.add('show');
+  document.body.classList.add('no-scroll');
+}
+function closeDrawer() {
+  document.getElementById('drawer')?.classList.remove('open');
+  document.getElementById('drawer-backdrop')?.classList.remove('show');
+  document.body.classList.remove('no-scroll');
+}
+
+// A slide-in menu that mirrors the header's navigation and controls.
+// Rebuilt on each chrome render; the same links carry data-t so a
+// language switch relabels them in place.
+function buildDrawer() {
+  document.getElementById('drawer-root')?.remove();
+  if (!state.me) return; // no menu before sign-in
+
+  const nav = el('nav', { cls: 'drawer-nav' });
+  for (const [href, key] of navItems()) {
+    const link = el('a', { dataT: key, attrs: { href }, on: { click: closeDrawer } });
+    if (location.pathname === href) link.className = 'active';
+    nav.append(link);
+  }
+
+  const langWrap = el('div', { cls: 'lang-switch', attrs: { role: 'group' } });
+  for (const lang of ['ka', 'en']) {
+    const b = el('button', {
+      text: lang === 'ka' ? 'ქარ' : 'ENG',
+      attrs: { type: 'button', 'data-lang': lang },
+      on: { click: () => switchLocale(lang) },
+    });
+    b.setAttribute('aria-pressed', String(lang === getLocale()));
+    langWrap.append(b);
+  }
+
+  const sfxBtn = el('button', { cls: 'btn ghost small' });
+  const paint = () => {
+    sfxBtn.textContent = sfx.isOn() ? `🔊 ${t('sound')}` : `🔇 ${t('sound')}`;
+  };
+  paint();
+  sfxBtn.addEventListener('click', () => {
+    sfx.toggle();
+    paint();
+    const h = document.getElementById('sfx-btn');
+    if (h) h.textContent = sfx.isOn() ? '🔊' : '🔇';
+  });
+
+  const panel = el('aside', { cls: 'drawer', attrs: { id: 'drawer', 'aria-hidden': 'true' } }, [
+    el('div', { cls: 'drawer-head' }, [
+      el('span', { cls: 'brand', text: state.pub ? state.pub.site_name : '' }),
+      el('button', { cls: 'btn ghost small icon-btn', text: '✕', on: { click: closeDrawer } }),
+    ]),
+    nav,
+    el('div', { cls: 'drawer-section' }, [langWrap, sfxBtn]),
+    el('button', { cls: 'btn ghost drawer-logout', dataT: 'nav_logout', on: { click: doLogout } }),
+  ]);
+
+  const backdrop = el('div', { cls: 'drawer-backdrop', attrs: { id: 'drawer-backdrop' }, on: { click: closeDrawer } });
+  const root = el('div', { attrs: { id: 'drawer-root' } }, [backdrop, panel]);
+  document.body.append(root);
+  applyI18n(root);
 }
 
 function switchLocale(locale) {
