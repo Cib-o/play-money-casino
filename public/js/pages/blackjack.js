@@ -106,14 +106,30 @@ if (ctx) {
 
   // Fullscreen toggle — offered only where the API exists (not iOS
   // Safari, which is why the rotate-to-play gate is the real fix).
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  };
   const fsBtn = $('fs-btn');
   if (fsBtn && document.documentElement.requestFullscreen) {
     fsBtn.hidden = false;
     fsBtn.addEventListener('click', () => {
       sfx.button();
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen().catch(() => {});
+      toggleFullscreen();
     });
+  }
+
+  // Floating controls shown when the header is hidden on landscape
+  // phones: a menu button that opens the side drawer (so the player can
+  // still leave for the lobby) and a fullscreen button where supported.
+  const bjMenu = $('bj-menu');
+  if (bjMenu) {
+    bjMenu.addEventListener('click', () => document.getElementById('burger-btn')?.click());
+  }
+  const bjFs2 = $('bj-fs2');
+  if (bjFs2) {
+    if (document.documentElement.requestFullscreen) bjFs2.addEventListener('click', toggleFullscreen);
+    else bjFs2.remove(); // no fullscreen API (e.g. iOS Safari)
   }
 
   // Scale the whole table to fill the window without scrolling, on any

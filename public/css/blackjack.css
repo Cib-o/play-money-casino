@@ -536,10 +536,33 @@ body.bj-page .bj-stage {
 /* Short viewports (phones held sideways): reclaim every vertical pixel
    and make the table wider-and-shorter so the uniform scale can grow
    it to use the width instead of leaving big side margins. */
+/* floating menu / fullscreen buttons, used when the header is hidden */
+.bj-float {
+  display: none;
+  position: fixed;
+  top: 8px;
+  z-index: 70;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.bj-float-menu { left: 8px; }
+.bj-float-fs { right: 8px; }
+
 @media (max-height: 520px) {
+  /* phone held sideways: hide the header for a near-fullscreen table,
+     with floating buttons to open the menu (exit) or go fullscreen */
+  body.bj-page header.site { display: none; }
+  body.bj-page .bj-float { display: inline-flex; }
   body.bj-page .page-head { display: none; }
-  body.bj-page .shell-header { min-height: 42px; }
-  /* shorter felt + a tight dock so the stage is short and scales up */
   body.bj-page .bj-felt { min-height: 0; aspect-ratio: 16 / 7; }
   body.bj-page .bj-dock { padding: 6px 10px; gap: 5px 10px; }
   body.bj-page .bj-limits { display: none; }
