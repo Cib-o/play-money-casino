@@ -128,8 +128,9 @@ if (ctx) {
     const availW = fitEl.clientWidth;
     const availH = fitEl.clientHeight;
     if (!natW || !natH || !availW || !availH) return;
-    let scale = Math.min(availW / natW, availH / natH);
-    scale = Math.max(0.35, Math.min(scale, 2.2));
+    // never clamp below the fit: the controls must always stay on screen
+    const scale = Math.min(availW / natW, availH / natH, 2.2);
+    if (scale <= 0) return;
     stageEl.style.transform = `scale(${scale})`;
   }
   window.addEventListener('resize', fitStage);

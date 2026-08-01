@@ -532,3 +532,15 @@ body.bj-page .bj-stage {
     padding: 30px 20px;
   }
 }
+
+/* Short viewports (phones held sideways): reclaim every vertical pixel
+   and make the table wider-and-shorter so the uniform scale can grow
+   it to use the width instead of leaving big side margins. */
+@media (max-height: 520px) {
+  body.bj-page .page-head { display: none; }
+  body.bj-page .shell-header { min-height: 44px; }
+  body.bj-page .footer-inner { padding: 4px 12px 6px; }
+  body.bj-page .footer-inner .notice { font-size: 10.5px; }
+  body.bj-page .bj-felt { min-height: 0; aspect-ratio: 16 / 7; }
+  body.bj-page .bj-dock { padding: 8px 12px; }
+}
