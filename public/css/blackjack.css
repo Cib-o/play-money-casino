@@ -424,14 +424,16 @@ body.bj-page .bj-stage {
 
 /* ── control dock ─────────────────────────────────────────────── */
 .bj-dock {
+  flex: 0 0 auto; /* a real control bar below the table — never scaled */
+  width: 100%;
   max-width: 900px;
-  margin: 14px auto 0;
+  margin: 8px auto 10px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px 16px;
-  padding: 12px 16px;
+  gap: 10px 16px;
+  padding: 10px 16px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 14px;
@@ -530,7 +532,7 @@ body.bj-page .bj-stage {
 
 @media (max-width: 740px) and (orientation: portrait) {
   /* the felt is landscape by nature — ask phones to turn sideways */
-  .bj-fit, #fs-btn { display: none; }
+  .bj-fit, .bj-dock, #fs-btn { display: none; }
   .rotate-gate {
     display: flex;
     flex: 1;
@@ -593,7 +595,10 @@ body.bj-page .bj-stage {
   body.bj-page .bj-float-balance { display: inline-flex; }
   body.bj-page .page-head { display: none; }
   body.bj-page .bj-felt { min-height: 0; aspect-ratio: 16 / 7; }
-  body.bj-page .bj-dock { padding: 6px 10px; gap: 5px 10px; }
+  body.bj-page .bj-dock { padding: 5px 8px; gap: 4px 8px; margin: 4px auto 6px; }
+  body.bj-page .bj-dock .chip-coin { width: 30px; height: 30px; font-size: 9.5px; }
+  body.bj-page .bj-act .ring { width: 40px; height: 40px; font-size: 17px; }
+  body.bj-page .bj-act { font-size: 9.5px; }
   body.bj-page .bj-limits { display: none; }
   body.bj-page .bj-hint { width: auto; font-size: 11px; }
 }
