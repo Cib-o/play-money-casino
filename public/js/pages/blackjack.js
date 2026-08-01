@@ -104,6 +104,18 @@ if (ctx) {
   buildRack();
   $('limits').textContent = `${t('bj_min')}: ${fmt(MIN)}  ·  ${t('bj_max')}: ${fmt(MAX)}`;
 
+  // Fullscreen toggle — offered only where the API exists (not iOS
+  // Safari, which is why the rotate-to-play gate is the real fix).
+  const fsBtn = $('fs-btn');
+  if (fsBtn && document.documentElement.requestFullscreen) {
+    fsBtn.hidden = false;
+    fsBtn.addEventListener('click', () => {
+      sfx.button();
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => {});
+    });
+  }
+
   // ── seat interaction: sit on an empty seat, bet on your own ──────
   async function post(path, body) {
     if (busy) return;

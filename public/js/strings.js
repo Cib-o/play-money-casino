@@ -240,7 +240,9 @@ export const STRINGS = {
       "bj_sitting_out": "Sitting out — place a bet to play",
       "bj_your_seat": "You",
       "bj_choose_seat": "Pick a seat to join",
-      "bj_place_hint": "Pick a chip, then tap your seat"
+      "bj_place_hint": "Pick a chip, then tap your seat",
+      "bj_rotate_title": "Rotate your phone",
+      "bj_rotate_hint": "Turn your device sideways to play blackjack."
   },
   ka: {
       "footer_notice": "კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.",
@@ -479,6 +481,8 @@ export const STRINGS = {
       "bj_sitting_out": "სიტ-აუტი — ჩასართავად დადე ფსონი",
       "bj_your_seat": "შენ",
       "bj_choose_seat": "აირჩიე ადგილი მაგიდასთან",
-      "bj_place_hint": "აირჩიე ჩიპი და დააჭირე შენს ადგილს"
+      "bj_place_hint": "აირჩიე ჩიპი და დააჭირე შენს ადგილს",
+      "bj_rotate_title": "გადააბრუნე ტელეფონი",
+      "bj_rotate_hint": "დააბრუნე მოწყობილობა გვერდულად ბლექჯეკის სათამაშოდ."
   }
 };

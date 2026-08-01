@@ -502,3 +502,31 @@
   .bj-act .ring { width: 44px; height: 44px; font-size: 18px; }
   .bj-status { font-size: 12px; padding: 5px 12px; }
 }
+
+/* ── rotate-to-play gate (small screens, portrait) ──────────────── */
+.rotate-gate { display: none; }
+.rotate-gate .rotate-icon {
+  font-size: 68px;
+  line-height: 1;
+  animation: rotate-hint 2.4s ease-in-out infinite;
+}
+.rotate-gate h2 { margin: 0; }
+@keyframes rotate-hint {
+  0%, 55% { transform: rotate(0); }
+  75%, 100% { transform: rotate(-90deg); }
+}
+
+@media (max-width: 740px) and (orientation: portrait) {
+  /* the felt is landscape by nature — ask phones to turn sideways */
+  .bj-stage, #fs-btn { display: none; }
+  .rotate-gate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    min-height: 55vh;
+    padding: 30px 20px;
+  }
+}
