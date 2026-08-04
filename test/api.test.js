@@ -5,6 +5,8 @@ import { openDb, nowISO } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { buildApp } from '../src/app.js';
 import { MACHINES, MACHINE_IDS, DEFAULT_MACHINE } from '../src/games/slots.js';
+import { LINE_MACHINES } from '../src/games/slot-lines.js';
+import { FLOOR_IDS } from '../src/games/slot-floor.js';
 
 const SECRET = 'test-session-secret-0123456789abcdef0123456789';
 
@@ -245,15 +247,30 @@ test('slots: the floor is served from the registry and the machine is honoured',
   const floor = JSON.parse(list.body);
   assert.equal(floor.default, DEFAULT_MACHINE);
   assert.equal(floor.rtp, 0.96);
-  assert.deepEqual(floor.machines.map((m) => m.id), MACHINE_IDS);
+  assert.deepEqual(floor.machines.map((m) => m.id), FLOOR_IDS);
 
   for (const view of floor.machines) {
     // The paytable a player reads is the one the server resolves
     // against — there is no second, prettier copy of the numbers.
-    assert.deepEqual(view.mult, MACHINES[view.id].mult, view.id);
-    assert.equal(view.reels, MACHINES[view.id].reels, view.id);
     assert.ok(view.hit_rate > 0 && view.hit_rate < 1, view.id);
     assert.ok(view.sd > 0, view.id);
+    if (view.kind === 'lines') {
+      const m = LINE_MACHINES[view.id];
+      assert.equal(view.rows, m.rows, view.id);
+      assert.equal(view.cols, m.cols, view.id);
+      assert.equal(view.lines.length, m.lineCount, view.id);
+      assert.deepEqual(view.symbols, m.symbols, view.id);
+      assert.equal(view.wild, m.wild, view.id);
+      assert.equal(view.scatter, m.scatter, view.id);
+      // The wild never lands on reel 0, so a run of wilds cannot start a
+      // line and the wild can never pay on its own. Its row must read as
+      // zero rather than advertise a prize nobody can win.
+      assert.deepEqual(view.pay[m.wild], [0, 0, 0], `${view.id} wild pays nothing`);
+      assert.deepEqual(view.pay[m.scatter], [0, 0, 0], `${view.id} scatter row`);
+    } else {
+      assert.deepEqual(view.mult, MACHINES[view.id].mult, view.id);
+      assert.equal(view.reels, MACHINES[view.id].reels, view.id);
+    }
   }
 
   for (const view of floor.machines) {
@@ -263,9 +280,18 @@ test('slots: the floor is served from the registry and the machine is honoured',
     assert.equal(res.statusCode, 200, res.body);
     const { round } = JSON.parse(res.body);
     assert.equal(round.outcome.machine, view.id);
-    assert.equal(round.outcome.reels.length, view.reels);
-    assert.ok(round.outcome.mult === 0 || view.mult.includes(round.outcome.mult), view.id);
     assert.equal(round.payout, Math.round(5 * round.outcome.mult));
+    if (view.kind === 'lines') {
+      // Only the stops are recorded; the grid and every winning line are
+      // derived from them, so the two can never disagree.
+      assert.equal(round.outcome.kind, 'lines');
+      assert.equal(round.outcome.stops.length, view.cols, view.id);
+      assert.ok(round.outcome.stops.every((s) => Number.isInteger(s) && s >= 0), view.id);
+      assert.equal(round.outcome.reels, undefined, view.id);
+    } else {
+      assert.equal(round.outcome.reels.length, view.reels);
+      assert.ok(round.outcome.mult === 0 || view.mult.includes(round.outcome.mult), view.id);
+    }
   }
 
   // An id that is not on the floor is rejected, not quietly swapped

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readSettings, nowISO } from '../db.js';
 import { AppError } from '../errors.js';
 import { getOrCreateSeed, setClientSeed, rotateSeed } from '../seeds.js';
-import * as slots from '../games/slots.js';
+import * as floor from '../games/slot-floor.js';
 import * as roulette from '../games/roulette.js';
 import * as dice from '../games/dice.js';
 
@@ -109,17 +109,18 @@ export function registerGameRoutes(app) {
   }
 
   // ── slots ─────────────────────────────────────────────────────────
-  // Every machine on the floor runs the same calibration at the same
-  // RTP; the machine id only selects which paytable and reel count the
-  // draw is resolved against. The list is served from the registry so
-  // the odds a player reads are the odds the server plays.
+  // Every machine on the floor returns the same configured RTP; the
+  // machine id selects which engine and paytable the draw is resolved
+  // against, and so only changes the shape of the ride. The list is
+  // served from the registry, so the odds a player reads are the odds
+  // the server plays — there is no second, prettier copy of the numbers.
   app.get('/api/game/slots/machines', auth, async () => {
     const settings = readSettings(db);
     requireEnabled(settings, 'slots');
     return {
       rtp: settings.rtp,
-      default: slots.DEFAULT_MACHINE,
-      machines: slots.MACHINE_IDS.map((id) => slots.machineView(id, settings.rtp)),
+      default: floor.DEFAULT_MACHINE,
+      machines: floor.floorViews(settings.rtp),
     };
   });
 
@@ -134,7 +135,7 @@ export function registerGameRoutes(app) {
           required: ['bet'],
           properties: {
             bet: { type: 'integer', minimum: 1, maximum: 1000000000 },
-            machine: { type: 'string', enum: slots.MACHINE_IDS },
+            machine: { type: 'string', enum: floor.FLOOR_IDS },
           },
         },
       },
@@ -143,9 +144,9 @@ export function registerGameRoutes(app) {
       const settings = readSettings(db);
       requireEnabled(settings, 'slots');
       checkBet(req.body.bet, settings);
-      const machine = req.body.machine || slots.DEFAULT_MACHINE;
+      const machine = req.body.machine || floor.DEFAULT_MACHINE;
       return resolveRound(req.user.id, 'slots', req.body.bet, (seed) => {
-        const out = slots.spin({
+        const out = floor.spinFloor({
           serverSeed: seed.server_seed,
           clientSeed: seed.client_seed,
           nonce: seed.nonce,
@@ -153,10 +154,7 @@ export function registerGameRoutes(app) {
           bet: req.body.bet,
           machine,
         });
-        return {
-          payout: out.payout,
-          outcome: { rtp: settings.rtp, machine: out.machine, mult: out.mult, reels: out.reels },
-        };
+        return { payout: out.payout, outcome: floor.outcomeOf(out, settings.rtp) };
       });
     },
   );

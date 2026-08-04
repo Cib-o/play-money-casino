@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STRINGS } from '../public/js/strings.js';
+import { FLOOR_IDS } from '../src/games/slot-floor.js';
 
 // The string table is pure data, so the frontend's i18n source can be
 // checked in CI: if the key sets ever drift apart, some UI language
@@ -29,6 +30,17 @@ test('the play-money notice matches the required wording exactly', () => {
     STRINGS.ka.footer_notice,
     'კრედიტი სათამაშო ქულაა. მას ფულადი ღირებულება არ აქვს, არ იყიდება და არ განაღდდება.',
   );
+});
+
+// Adding a machine to the registry without adding its strings would put
+// the raw key on the lobby card in both languages.
+test('every machine on the floor is named and described in both languages', () => {
+  for (const locale of ['en', 'ka']) {
+    for (const id of FLOOR_IDS) {
+      assert.ok(STRINGS[locale][`slot_name_${id}`], `${locale}: no name for ${id}`);
+      assert.ok(STRINGS[locale][`slot_tag_${id}`], `${locale}: no tagline for ${id}`);
+    }
+  }
 });
 
 test('georgian strings actually contain georgian script', () => {

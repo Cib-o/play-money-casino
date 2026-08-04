@@ -107,6 +107,309 @@ export function slotTable(rtp, machine = SLOT_DEFAULT_MACHINE) {
   return { outs, cum, q };
 }
 
+// ── Payline slots (mirrors src/games/slot-lines.js) ───────────────
+// The second slot engine. Where the ladder above decides a multiplier
+// and then picks reels to show it, these machines draw a stop position
+// per reel and read the win off whatever lands on the paylines.
+//
+// Same rule as the ladder registry: this is a copy, on purpose. Every
+// number a player is paid by is written here where they can read it, and
+// test/verify.test.js fails the build if one digit drifts from the
+// server's.
+export const LINE_MACHINES = {
+  meadow: {
+    rows: 3,
+    cols: 5,
+    lineCount: 20,
+    symbols: ['square-blue', 'square-green', 'square-yellow', 'octagon-green', 'octagon-blue', 'diamond-green', 'triangle-yellow', 'triangle-purple'],
+    wild: 6,
+    scatter: 7,
+    pay: [[5, 20, 55], [6, 25, 65], [8, 25, 75], [15, 50, 160], [20, 65, 250], [35, 120, 450], [0, 0, 0], [0, 0, 0]],
+    scatterPay: [2, 6, 20],
+    counts: [
+      [11, 10, 10, 4, 3, 2, 0, 2],
+      [11, 10, 10, 4, 3, 2, 2, 2],
+      [11, 10, 10, 4, 3, 2, 2, 2],
+      [11, 10, 10, 4, 3, 2, 2, 2],
+      [11, 10, 10, 4, 3, 2, 2, 2],
+    ],
+  },
+  vault: {
+    rows: 3,
+    cols: 5,
+    lineCount: 20,
+    symbols: ['square-purple', 'square-blue', 'square-black', 'octagon-purple', 'octagon-red', 'octagon-yellow', 'diamond-purple', 'triangle-yellow', 'triangle-blue'],
+    wild: 7,
+    scatter: 8,
+    pay: [[5, 20, 70], [5, 20, 70], [5, 25, 95], [20, 95, 480], [30, 140, 720], [40, 200, 1200], [390, 2200, 18000], [0, 0, 0], [0, 0, 0]],
+    scatterPay: [4, 16, 100],
+    counts: [
+      [10, 10, 9, 6, 5, 4, 2, 0, 2],
+      [10, 10, 9, 6, 5, 4, 2, 2, 2],
+      [10, 10, 9, 6, 5, 4, 2, 2, 2],
+      [10, 10, 9, 6, 5, 4, 2, 2, 2],
+      [10, 10, 9, 6, 5, 4, 2, 2, 2],
+    ],
+  },
+  ember: {
+    rows: 3,
+    cols: 5,
+    lineCount: 20,
+    symbols: ['square-red', 'square-yellow', 'square-black', 'octagon-red', 'octagon-yellow', 'diamond-red', 'triangle-yellow', 'triangle-green'],
+    wild: 6,
+    scatter: 7,
+    pay: [[0, 10, 55], [0, 15, 65], [0, 20, 85], [20, 110, 700], [40, 220, 1500], [2800, 18000, 140000], [0, 0, 0], [0, 0, 0]],
+    scatterPay: [4, 22, 190],
+    counts: [
+      [14, 13, 12, 6, 4, 1, 0, 2],
+      [14, 13, 12, 6, 4, 1, 2, 2],
+      [14, 13, 12, 6, 4, 1, 2, 2],
+      [14, 13, 12, 6, 4, 1, 2, 2],
+      [14, 13, 12, 6, 4, 1, 2, 2],
+    ],
+  },
+  monolith: {
+    rows: 4,
+    cols: 5,
+    lineCount: 30,
+    symbols: ['square-black', 'square-blue', 'square-green', 'octagon-black', 'octagon-blue', 'diamond-blue', 'diamond-yellow', 'triangle-yellow', 'triangle-red'],
+    wild: 7,
+    scatter: 8,
+    pay: [[0, 5, 35], [0, 8, 40], [0, 10, 55], [25, 180, 1100], [55, 390, 2900], [2500, 18000, 140000], [6200, 50000, 385000], [0, 0, 0], [0, 0, 0]],
+    scatterPay: [3, 18, 200],
+    counts: [
+      [17, 16, 15, 6, 4, 1, 1, 0, 2],
+      [17, 16, 15, 6, 4, 1, 1, 2, 2],
+      [17, 16, 15, 6, 4, 1, 1, 2, 2],
+      [17, 16, 15, 6, 4, 1, 1, 2, 2],
+      [17, 16, 15, 6, 4, 1, 1, 2, 2],
+    ],
+  },
+};
+
+export const LINE_MACHINE_IDS = Object.keys(LINE_MACHINES);
+
+export function isLineMachine(id) {
+  return Object.prototype.hasOwnProperty.call(LINE_MACHINES, id);
+}
+
+/** Even spread of each symbol along a strip; no RNG, so it is checkable. */
+export function lineLayout(counts) {
+  const total = counts.reduce((a, b) => a + b, 0);
+  const placed = counts.map(() => 0);
+  const strip = [];
+  for (let i = 0; i < total; i++) {
+    let best = -1;
+    let bestDeficit = -Infinity;
+    for (let s = 0; s < counts.length; s++) {
+      if (placed[s] >= counts[s]) continue;
+      const deficit = (i + 1) * (counts[s] / total) - placed[s];
+      if (deficit > bestDeficit) {
+        bestDeficit = deficit;
+        best = s;
+      }
+    }
+    strip.push(best);
+    placed[best]++;
+  }
+  return strip;
+}
+
+/** Connected paths across the grid, flattest first. Order is part of the paytable. */
+export function lineBuildLines(rows, cols, count) {
+  const paths = [];
+  const walk = (path) => {
+    if (path.length === cols) {
+      paths.push(path.slice());
+      return;
+    }
+    const last = path[path.length - 1];
+    for (let r = 0; r < rows; r++) {
+      if (path.length === 0 || Math.abs(r - last) <= 1) {
+        path.push(r);
+        walk(path);
+        path.pop();
+      }
+    }
+  };
+  walk([]);
+  const travel = (p) => p.reduce((a, r, i) => (i ? a + Math.abs(r - p[i - 1]) : 0), 0);
+  const flat = (p) => (p.every((r) => r === p[0]) ? 0 : 1);
+  paths.sort((a, b) => {
+    if (flat(a) !== flat(b)) return flat(a) - flat(b);
+    if (flat(a) === 0) return a[0] - b[0];
+    if (travel(a) !== travel(b)) return travel(a) - travel(b);
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return 0;
+  });
+  return paths.slice(0, count);
+}
+
+// Strips and lines are derived from the registry above, and derived once
+// — rebuilding them per spin would be wasted work in a page that may
+// replay hundreds of rounds.
+const lineCache = new Map();
+export function lineMachine(id) {
+  if (lineCache.has(id)) return lineCache.get(id);
+  const spec = LINE_MACHINES[id];
+  if (!spec) return undefined;
+  const m = {
+    ...spec,
+    id,
+    strips: spec.counts.map((c) => lineLayout(c)),
+    lines: lineBuildLines(spec.rows, spec.cols, spec.lineCount),
+  };
+  lineCache.set(id, m);
+  return m;
+}
+
+export function lineWindow(strip, stop, rows) {
+  return Array.from({ length: rows }, (_, r) => strip[(stop + r) % strip.length]);
+}
+
+export function lineGrid(stops, m) {
+  return m.strips.map((strip, c) => lineWindow(strip, stops[c], m.rows));
+}
+
+/** Best win on one line, in line-bet units. Wilds substitute; scatters never pay here. */
+export function lineWinOf(cells, m) {
+  let bestPay = 0;
+  let bestSymbol = -1;
+  let bestRun = 0;
+  for (let s = 0; s < m.symbols.length; s++) {
+    if (s === m.scatter) continue;
+    let run = 0;
+    while (run < cells.length && (cells[run] === s || cells[run] === m.wild)) run++;
+    if (run < 3) continue;
+    const pay = m.pay[s][run - 3];
+    if (pay > bestPay) {
+      bestPay = pay;
+      bestSymbol = s;
+      bestRun = run;
+    }
+  }
+  return { pay: bestPay, symbol: bestSymbol, run: bestRun };
+}
+
+export function lineEvaluate(grid, m) {
+  const wins = [];
+  for (let i = 0; i < m.lines.length; i++) {
+    const cells = m.lines[i].map((row, col) => grid[col][row]);
+    const w = lineWinOf(cells, m);
+    if (w.pay > 0) wins.push({ line: i, symbol: w.symbol, run: w.run, pay: w.pay });
+  }
+  const scatterCells = [];
+  for (let c = 0; c < grid.length; c++) {
+    for (let r = 0; r < grid[c].length; r++) {
+      if (grid[c][r] === m.scatter) scatterCells.push([c, r]);
+    }
+  }
+  const n = scatterCells.length;
+  const scatterPay = n >= 3 ? m.scatterPay[Math.min(n, 5) - 3] : 0;
+  const lineTotal = wins.reduce((a, w) => a + w.pay, 0);
+  return { wins, scatterCells, scatterPay, total: lineTotal + scatterPay * m.lines.length };
+}
+
+// The expected return at the pay values as written. A line touches one
+// cell per column, and because the stop is uniform over the strip that
+// cell is uniform over the strip whatever row the line runs along — so
+// the columns along a line are independent with known marginals, and
+// every line has the same expected value. Enumerating one line therefore
+// prices all of them.
+function lineMarginals(m) {
+  return m.strips.map((strip) => {
+    const row = new Array(m.symbols.length).fill(0);
+    for (const s of strip) row[s] += 1 / strip.length;
+    return row;
+  });
+}
+
+function lineExpected(m) {
+  const p = lineMarginals(m);
+  const cells = new Array(m.cols);
+  let e1 = 0;
+  const walk = (c, prob) => {
+    if (prob === 0) return;
+    if (c === m.cols) {
+      e1 += prob * lineWinOf(cells, m).pay;
+      return;
+    }
+    for (let s = 0; s < m.symbols.length; s++) {
+      if (p[c][s] === 0) continue;
+      cells[c] = s;
+      walk(c + 1, prob * p[c][s]);
+    }
+  };
+  walk(0, 1);
+  return e1;
+}
+
+// Scatters read the whole window, so cells within a column are adjacent
+// strip entries and correlated. Enumerating every stop of a reel handles
+// that exactly; across reels the stops are independent, so the per-reel
+// distributions convolve.
+function scatterExpected(m) {
+  let dist = [1];
+  for (const strip of m.strips) {
+    const per = [];
+    for (let stop = 0; stop < strip.length; stop++) {
+      let k = 0;
+      for (let r = 0; r < m.rows; r++) if (strip[(stop + r) % strip.length] === m.scatter) k++;
+      per[k] = (per[k] || 0) + 1 / strip.length;
+    }
+    const next = new Array(dist.length + per.length - 1).fill(0);
+    for (let a = 0; a < dist.length; a++) {
+      if (!dist[a]) continue;
+      for (let b = 0; b < per.length; b++) {
+        if (!per[b]) continue;
+        next[a + b] += dist[a] * per[b];
+      }
+    }
+    dist = next;
+  }
+  let e1 = 0;
+  for (let k = 3; k < dist.length; k++) {
+    if (dist[k]) e1 += dist[k] * m.scatterPay[Math.min(k, 5) - 3];
+  }
+  return e1;
+}
+
+const naturalCache = new Map();
+export function lineNaturalReturn(id) {
+  if (naturalCache.has(id)) return naturalCache.get(id);
+  const m = lineMachine(id);
+  const value = lineExpected(m) + scatterExpected(m);
+  naturalCache.set(id, value);
+  return value;
+}
+
+/** One factor applied to the whole paytable so the machine returns `rtp`. */
+export function linePayScale(rtp, id) {
+  return rtp / lineNaturalReturn(id);
+}
+
+/** Replay a payline spin: one uniform draw per reel, cursors 0..cols-1. */
+export async function verifySlotLines({ serverSeed, clientSeed, nonce, rtp, machine }) {
+  const m = lineMachine(machine);
+  const stops = [];
+  for (let c = 0; c < m.cols; c++) {
+    stops.push(Math.floor((await uniform(serverSeed, clientSeed, nonce, c)) * m.strips[c].length));
+  }
+  const grid = lineGrid(stops, m);
+  const ev = lineEvaluate(grid, m);
+  const scale = linePayScale(rtp, machine);
+  return {
+    machine,
+    kind: 'lines',
+    stops,
+    grid,
+    wins: ev.wins,
+    scatterCells: ev.scatterCells,
+    scatterPay: ev.scatterPay * scale,
+    mult: (ev.total / m.lines.length) * scale,
+  };
+}
+
 // ── Roulette (mirrors src/games/roulette.js) ──────────────────────
 export const ROULETTE_RED = new Set([
   1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,

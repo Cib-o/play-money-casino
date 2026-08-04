@@ -12,6 +12,9 @@ import {
   ROULETTE_RED,
   SLOT_MACHINE_IDS,
   SLOT_DEFAULT_MACHINE,
+  verifySlotLines,
+  isLineMachine,
+  LINE_MACHINE_IDS,
 } from '../verify-core.js';
 import { theme } from '../slot-themes.js';
 
@@ -23,6 +26,11 @@ await initShell();
 const $ = (id) => document.getElementById(id);
 let recorded = null; // the loaded round, if any
 
+// A payline multiplier is a scaled sum rather than a value off a ladder,
+// so it is rarely a round number. Trim it for display without hiding a
+// difference that would matter.
+const round4 = (n) => String(Math.round(n * 10000) / 10000);
+
 function pocketLabel(n) {
   if (n === 0) return '0';
   return `${n} · ${t(ROULETTE_RED.has(n) ? 'roulette_red' : 'roulette_black')}`;
@@ -32,15 +40,39 @@ function pocketLabel(n) {
 // `compute` recomputes it from the seeds and says whether it matches
 // the recorded one.
 const GAMES = {
+  // Two engines behind one game name. A ladder round is a multiplier and
+  // a row of symbols; a payline round is a set of reel stops that the
+  // grid and every winning line are derived from. The recorded outcome
+  // says which it is, and only the stops are stored, so the check is
+  // against the numbers the server actually committed to.
   slots: {
     usesRtp: true,
     describe(outcome, machine) {
-      const syms = theme(machine || outcome.machine).symbols;
+      const id = machine || outcome.machine;
+      if (isLineMachine(id)) {
+        const wins = outcome.wins ? outcome.wins.length : null;
+        const parts = [outcome.stops.join(', ')];
+        if (wins !== null) parts.push(`${wins} ${t('verify_line_wins')}`);
+        parts.push(`${round4(outcome.mult)}×`);
+        return parts.join('  ·  ');
+      }
+      const syms = theme(id).symbols;
       const reels = outcome.reels.map((i) => syms[i] ?? '?').join(' ');
       return `${reels}  ·  ${outcome.mult}×`;
     },
     async compute({ serverSeed, clientSeed, nonce, rtp }) {
       const machine = $('v-machine').value;
+      if (isLineMachine(machine)) {
+        const out = await verifySlotLines({ serverSeed, clientSeed, nonce, rtp, machine });
+        return {
+          text: this.describe(out, machine),
+          matches: recorded
+            ? JSON.stringify(out.stops) === JSON.stringify(recorded.outcome.stops) &&
+              // the multiplier is a scaled sum, so compare it as a number
+              Math.abs(out.mult - recorded.outcome.mult) < 1e-9
+            : null,
+        };
+      }
       const out = await verifySlots({ serverSeed, clientSeed, nonce, rtp, machine });
       return {
         text: this.describe(out, machine),
@@ -121,7 +153,8 @@ const GAMES = {
 // Each slot machine resolves its draw against its own paytable, so the
 // verifier needs to know which cabinet a round was played on.
 const machineSelect = $('v-machine');
-for (const id of SLOT_MACHINE_IDS) machineSelect.append(new Option(t(`slot_name_${id}`), id));
+const FLOOR_IDS = [...LINE_MACHINE_IDS, ...SLOT_MACHINE_IDS];
+for (const id of FLOOR_IDS) machineSelect.append(new Option(t(`slot_name_${id}`), id));
 machineSelect.value = SLOT_DEFAULT_MACHINE;
 onLocaleChange(() => {
   for (const option of machineSelect.options) option.textContent = t(`slot_name_${option.value}`);

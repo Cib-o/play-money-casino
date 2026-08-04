@@ -8,6 +8,13 @@ import {
   DEFAULT_MACHINE,
   buildTable,
 } from '../src/games/slots.js';
+import {
+  LINE_MACHINES as SERVER_LINE_MACHINES,
+  LINE_MACHINE_IDS as SERVER_LINE_MACHINE_IDS,
+  getLineMachine,
+  spinLines,
+  payScale,
+} from '../src/games/slot-lines.js';
 import { spinNumber, settle } from '../src/games/roulette.js';
 import { roll } from '../src/games/dice.js';
 import { makeDraw, replay, dealerPlay } from '../src/games/blackjack.js';
@@ -23,6 +30,12 @@ import {
   SLOT_MACHINES,
   SLOT_MACHINE_IDS,
   SLOT_DEFAULT_MACHINE,
+  verifySlotLines,
+  LINE_MACHINES,
+  LINE_MACHINE_IDS,
+  lineMachine,
+  linePayScale,
+  lineNaturalReturn,
 } from '../public/js/verify-core.js';
 
 // The browser verifier must mirror the server byte for byte. Running
@@ -147,6 +160,62 @@ test('verifySlots reproduces server spins on every machine across RTPs', async (
         const client = await verifySlots({ serverSeed: SEED, clientSeed: 'replay', nonce, rtp, machine });
         assert.equal(client.mult, server.mult, `${machine} mult at rtp ${rtp} nonce ${nonce}`);
         assert.deepEqual(client.reels, server.reels, `${machine} reels at rtp ${rtp} nonce ${nonce}`);
+      }
+    }
+  }
+});
+
+// Same contract for the payline engine, and more of it: the browser has
+// to rebuild the reel strips and the payline set from the counts, so a
+// difference in the strip layout or the line ordering would change the
+// outcome even with an identical paytable.
+test('the browser line registry matches the server line registry exactly', () => {
+  assert.deepEqual(LINE_MACHINE_IDS, SERVER_LINE_MACHINE_IDS, 'machine list');
+  for (const id of SERVER_LINE_MACHINE_IDS) {
+    const server = getLineMachine(id);
+    const client = LINE_MACHINES[id];
+    assert.equal(client.rows, server.rows, `${id} rows`);
+    assert.equal(client.cols, server.cols, `${id} cols`);
+    assert.equal(client.lineCount, server.lineCount, `${id} line count`);
+    assert.deepEqual(client.symbols, server.symbols, `${id} symbols`);
+    assert.equal(client.wild, server.wild, `${id} wild`);
+    assert.equal(client.scatter, server.scatter, `${id} scatter`);
+    assert.deepEqual(client.pay, server.pay, `${id} paytable`);
+    assert.deepEqual(client.scatterPay, server.scatterPay, `${id} scatter pays`);
+    assert.deepEqual(client.counts, server.counts, `${id} reel composition`);
+
+    // Derived, not copied — so these are the ones worth checking.
+    const built = lineMachine(id);
+    assert.deepEqual(built.strips, server.strips, `${id} reel strips`);
+    assert.deepEqual(built.lines, server.lines, `${id} paylines`);
+
+    for (const rtp of [0.8, 0.9, 0.96, 0.99]) {
+      assert.ok(
+        Math.abs(linePayScale(rtp, id) - payScale(rtp, id)) < 1e-12,
+        `${id} pay scale at rtp ${rtp}`,
+      );
+    }
+    // The browser solves the same expected return the server does.
+    assert.ok(Math.abs(lineNaturalReturn(id) * linePayScale(0.96, id) - 0.96) < 1e-12, id);
+  }
+});
+
+test('verifySlotLines reproduces server spins on every line machine', async () => {
+  for (const machine of SERVER_LINE_MACHINE_IDS) {
+    for (const rtp of [0.9, 0.96, 0.98]) {
+      for (let nonce = 0; nonce < 40; nonce++) {
+        const server = spinLines({
+          serverSeed: SEED, clientSeed: 'lines', nonce, rtp, bet: 100, machine,
+        });
+        const client = await verifySlotLines({
+          serverSeed: SEED, clientSeed: 'lines', nonce, rtp, machine,
+        });
+        const where = `${machine} at rtp ${rtp} nonce ${nonce}`;
+        assert.deepEqual(client.stops, server.stops, `stops ${where}`);
+        assert.deepEqual(client.grid, server.grid, `grid ${where}`);
+        assert.deepEqual(client.wins, server.wins, `wins ${where}`);
+        assert.deepEqual(client.scatterCells, server.scatterCells, `scatters ${where}`);
+        assert.ok(Math.abs(client.mult - server.mult) < 1e-12, `mult ${where}`);
       }
     }
   }
