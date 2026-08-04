@@ -277,9 +277,11 @@ if (ctx) {
     }
 
     function clearReadout() {
+      $('readout').className = 'cab-readout';
+      $('ro-label').textContent = '';
+      $('ro-amount').textContent = '';
       $('mult-badge').textContent = '';
-      $('net-value').textContent = '';
-      $('net-value').className = 'net-value num';
+      $('ro-net').textContent = '';
       $('win-list').textContent = '';
       for (const column of gcells) {
         for (const { face } of column) face.classList.remove('won', 'scattered', 'landed');
@@ -388,21 +390,31 @@ if (ctx) {
 
     // Wins are listed as numbers, largest first. No escalation: a large
     // win is a larger number in the same list, drawn the same way.
-    function listWins(wins, scatterCells, scatterPay, scale) {
+    //
+    // In credits, not multipliers. Every one of these used to be printed
+    // with a "×" and so did the total, but they were not the same unit:
+    // a line pays a multiple of the *line* bet while the total is a
+    // multiple of the whole stake. On the thirty-line cabinet at 100 a
+    // credit, that showed "54.92×" over a line and "2.1×" for the spin
+    // and left no way to get from one to the other. Credits are the unit
+    // the player is actually paid in, and they add up to the headline.
+    function listWins(wins, scatterCells, scatterPay, scale, stake) {
       const list = $('win-list');
       list.textContent = '';
+      const lineBet = stake / spec.lines.length;
       const shown = wins.slice(0, 5);
       for (const w of shown) {
+        // Same hue as the stroke over the reels, so a row here and a line
+        // up there are matchable at a glance. Set through the CSSOM for
+        // the same reason as the grid cells: style attributes are blocked.
+        const label = el('span', { cls: 'wl-line', text: `${t('slot_win_line')} ${w.line + 1}` });
+        label.style.color = `hsl(${(w.line * 47) % 360} 92% 64%)`;
         list.append(
           el('li', {}, [
-            el('span', {
-              cls: 'wl-line',
-              text: `${t('slot_win_line')} ${w.line + 1}`,
-              attrs: { style: `color:hsl(${(w.line * 47) % 360} 92% 64%)` },
-            }),
+            label,
             symbolImg(w.symbol, 'wl-sym'),
             el('span', { cls: 'wl-run num', text: `×${w.run}` }),
-            el('span', { cls: 'wl-pay num', text: `${px(w.pay * scale)}×` }),
+            el('span', { cls: 'wl-pay num', text: px(w.pay * scale * lineBet) }),
           ]),
         );
       }
@@ -415,13 +427,14 @@ if (ctx) {
             el('span', { cls: 'wl-line', dataT: 'slot_scatter' }),
             symbolImg(machine.scatter, 'wl-sym'),
             el('span', { cls: 'wl-run num', text: `×${scatterCells.length}` }),
-            el('span', { cls: 'wl-pay num', text: `${px(scatterPay * scale)}×` }),
+            // the scatter is quoted against the whole stake, not a line
+            el('span', { cls: 'wl-pay num', text: px(scatterPay * scale * stake) }),
           ]),
         );
       }
     }
 
-    async function landLines(outcome, art) {
+    async function landLines(outcome, art, stake) {
       // Rebuilt from the committed stops with the verifier's own module.
       // The round carries the RTP it was resolved at, so an admin who
       // changes the setting mid-session cannot make this page price a
@@ -456,7 +469,7 @@ if (ctx) {
       }
       for (const [c, r] of evalv.scatterCells) gcells[c][r].face.classList.add('scattered');
       drawWinLines(wins);
-      listWins(wins, evalv.scatterCells, evalv.scatterPay, scale);
+      listWins(wins, evalv.scatterCells, evalv.scatterPay, scale, stake);
     }
 
     async function spin() {
@@ -489,15 +502,28 @@ if (ctx) {
         // nothing gets painted onto them.
         if (machine === at) {
           const { outcome } = res.round;
-          await landLines(outcome, art);
+          await landLines(outcome, art, stake);
           kit.stop();
 
+          // How much came back, said plainly and in one place. The
+          // readout used to lead with the multiplier and put the net
+          // beside it, which answered "how did this spin price" but not
+          // "what did I win" — and the two numbers were in different
+          // units besides. The credits are the headline now; the
+          // multiplier and the net sit underneath as the working.
           const { mult } = outcome;
-          const net = res.round.payout - stake;
+          const { payout } = res.round;
+          const net = payout - stake;
+          const kind = net > 0 ? 'win' : net < 0 ? 'lose' : 'even';
+          $('readout').className = `cab-readout shown ${kind}`;
+          $('ro-label').textContent = t(`slot_${kind === 'win' ? 'won' : kind === 'lose' ? 'lost' : 'even'}_label`);
+          // On a win or a push the headline is what came back. On a loss
+          // it is what the spin cost — a partial return is still a loss,
+          // and printing the 40 that came back off a 100 stake as though
+          // it were the result would be the wrong number in bold.
+          $('ro-amount').textContent = net < 0 ? `−${fmt(-net)}` : fmt(payout);
           $('mult-badge').textContent = `${px(mult)}×`;
-          const netEl = $('net-value');
-          netEl.textContent = net > 0 ? `+${fmt(net)}` : net < 0 ? `−${fmt(-net)}` : '±0';
-          netEl.className = `net-value num ${net > 0 ? 'win-text' : net < 0 ? 'lose-text' : ''}`.trim();
+          $('ro-net').textContent = net > 0 ? `+${fmt(net)}` : net < 0 ? '' : '±0';
           // The same short result tone whatever the size of the win —
           // nothing here gets louder for a bigger number.
           kit.result(net > 0 ? 'win' : net === 0 ? 'even' : 'loss');

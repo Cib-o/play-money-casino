@@ -238,26 +238,86 @@
   .gface.spinning { animation: none; opacity: 0.75; }
   .gface.landed { animation: none !important; }
   .line-overlay polyline { animation: none; opacity: 0.9; }
+  .cab-readout.shown { animation: none; }
 }
 
 /* ── readout ────────────────────────────────────────────────────── */
+/* The result of the spin, in one place and in the unit the player is
+   paid in. The height is reserved whether or not there is anything to
+   say, so the reels never shift under the mouse between spins. Nothing
+   below scales with the size of the win: a hundred and a hundred
+   thousand get the same face, the same entry, the same colour. */
 .cab-readout {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  min-height: 42px;
+  gap: 1px;
+  min-height: 74px;
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  text-align: center;
 }
+.cab-readout.shown {
+  animation: readout-in 0.24s cubic-bezier(0.22, 1.15, 0.4, 1);
+}
+@keyframes readout-in {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.ro-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  opacity: 0.82;
+}
+.ro-label:empty { display: none; }
+/* The headline. var(--font-num) is already on it via .num, so the
+   digits line up column-wise from one spin to the next. */
+.ro-amount {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.ro-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.ro-net {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.ro-net:empty { display: none; }
 .mult-badge {
-  font-size: 15px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--m2);
-  padding: 3px 12px;
+  padding: 2px 10px;
   border: 1px solid color-mix(in srgb, var(--m2) 45%, transparent);
   border-radius: 999px;
 }
 .mult-badge:empty { display: none; }
-.net-value { font-size: 26px; font-weight: 800; }
+
+.cab-readout.win {
+  color: var(--win);
+  border-color: rgba(61, 220, 132, 0.34);
+  background: rgba(6, 34, 20, 0.5);
+}
+.cab-readout.lose {
+  color: var(--lose);
+  border-color: rgba(255, 77, 109, 0.28);
+  background: rgba(38, 8, 15, 0.42);
+}
+.cab-readout.even {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.035);
+}
 
 /* Every winning line as a number, largest first. Nothing here changes
    with the size of the win — a big one is a bigger number in the same
