@@ -318,9 +318,16 @@ export function lineEvaluate(grid, m) {
 // prices all of them.
 function lineMarginals(m) {
   return m.strips.map((strip) => {
+    // Counted whole, then divided once — the same arithmetic the server
+    // does, not merely the same formula. Adding 1/length per entry gives
+    // a different last bit, and that drift carries all the way through
+    // the enumeration into the pay scale. The game page refuses to draw
+    // any win when the multiplier it derives disagrees with the one the
+    // server recorded, so a few ulps here are not free: they eat into
+    // the margin on that comparison for nothing.
     const row = new Array(m.symbols.length).fill(0);
-    for (const s of strip) row[s] += 1 / strip.length;
-    return row;
+    for (const s of strip) row[s]++;
+    return row.map((count) => count / strip.length);
   });
 }
 

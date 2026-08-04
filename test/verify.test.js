@@ -189,11 +189,16 @@ test('the browser line registry matches the server line registry exactly', () =>
     assert.deepEqual(built.strips, server.strips, `${id} reel strips`);
     assert.deepEqual(built.lines, server.lines, `${id} paylines`);
 
+    // Equal to the last bit, not merely close. The game page will not
+    // draw a single win when the multiplier it derives differs from the
+    // server's by more than 1e-9, and both are this scale times a figure
+    // that runs into the thousands on the deepest cabinet — so a few ulps
+    // of drift here is a slice off the margin on that check, bought for
+    // nothing. Both sides count whole and divide once, in the same order,
+    // and IEEE 754 arithmetic is deterministic, so exact is achievable
+    // and anything less is a sign the two have started to diverge.
     for (const rtp of [0.8, 0.9, 0.96, 0.99]) {
-      assert.ok(
-        Math.abs(linePayScale(rtp, id) - payScale(rtp, id)) < 1e-12,
-        `${id} pay scale at rtp ${rtp}`,
-      );
+      assert.equal(linePayScale(rtp, id), payScale(rtp, id), `${id} pay scale at rtp ${rtp}`);
     }
     // The browser solves the same expected return the server does.
     assert.ok(Math.abs(lineNaturalReturn(id) * linePayScale(0.96, id) - 0.96) < 1e-12, id);
