@@ -637,6 +637,19 @@ export function spinLines({ serverSeed, clientSeed, nonce, rtp, bet, machine }) 
   };
 }
 
+/**
+ * Largest prize a single line can pay, as a multiple of the *total*
+ * bet. Deliberately not "the most a spin can return" — several lines
+ * and the scatter can land together — so the label next to it says top
+ * line, not top win. Understating it is the safe direction.
+ */
+export function topLinePrize(rtp, machineId) {
+  const m = getLineMachine(machineId);
+  let best = 0;
+  for (const row of m.pay) best = Math.max(best, row[m.cols - 3]);
+  return (best * payScale(rtp, machineId)) / m.lines.length;
+}
+
 /** What the client is told about a line machine. */
 export function lineMachineView(id, rtp) {
   const m = getLineMachine(id);
@@ -654,6 +667,7 @@ export function lineMachineView(id, rtp) {
     pay: m.pay.map((row) => row.map((v) => v * scale)),
     scatterPay: m.scatterPay.map((v) => v * scale),
     hit_rate: hitRate(id),
+    top: topLinePrize(rtp, id),
     sd,
   };
 }

@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { STRINGS } from '../public/js/strings.js';
 import { FLOOR_IDS } from '../src/games/slot-floor.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // The string table is pure data, so the frontend's i18n source can be
 // checked in CI: if the key sets ever drift apart, some UI language
@@ -41,6 +46,37 @@ test('every machine on the floor is named and described in both languages', () =
       assert.ok(STRINGS[locale][`slot_tag_${id}`], `${locale}: no tagline for ${id}`);
     }
   }
+});
+
+// t() falls back to returning the key itself, so a typo in a page shows
+// up as `slot_fact_gird` sitting in the UI rather than as an error. This
+// walks the whole frontend and pins every literal key it asks for
+// against the table. Computed keys (`t(`slot_name_${id}`)`) are covered
+// by the registry test above instead.
+test('every string key the frontend asks for exists', () => {
+  const files = [];
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(js|html)$/.test(entry.name)) files.push(full);
+    }
+  })(path.join(ROOT, 'public'));
+
+  assert.ok(files.length > 20, 'the walk found suspiciously little frontend');
+  const missing = [];
+  for (const file of files) {
+    const src = fs.readFileSync(file, 'utf8');
+    const keys = [
+      ...src.matchAll(/(?<![\w$.])t\('([a-z0-9_]+)'\)/g),
+      ...src.matchAll(/dataT:\s*'([a-z0-9_]+)'/g),
+      ...src.matchAll(/data-tp?="([a-z0-9_]+)"/g),
+    ].map((m) => m[1]);
+    for (const key of keys) {
+      if (!(key in STRINGS.en)) missing.push(`${path.relative(ROOT, file)}: ${key}`);
+    }
+  }
+  assert.deepEqual(missing, [], 'keys used but never defined');
 });
 
 test('georgian strings actually contain georgian script', () => {

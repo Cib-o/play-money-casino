@@ -22,8 +22,10 @@ import {
   hitRate,
   spinLines,
   lineMachineView,
+  topLinePrize,
 } from '../src/games/slot-lines.js';
 import { volatilityBand } from '../src/games/slots.js';
+import { LINE_ART, lineArt, artFor } from '../public/js/slot-line-art.js';
 
 const SEED = 'e'.repeat(64);
 const RTPS = [0.8, 0.9, 0.96, 0.98, 0.99];
@@ -476,6 +478,40 @@ test('the machine view exposes the scaled paytable and nothing extra', () => {
   }
 });
 
+// The figure on the lobby card. It is the biggest prize *one line* can
+// pay, which is a number a player can actually reach — not the sum of
+// every line landing at once, which would be a headline nobody will
+// ever see. The label next to it says top line for that reason.
+test('the top line prize is a reachable prize on the paytable', () => {
+  for (const id of LINE_MACHINE_IDS) {
+    const m = getLineMachine(id);
+    const view = lineMachineView(id, 0.96);
+    const best = Math.max(...m.pay.map((row) => row[m.cols - 3]));
+    assert.ok(best > 0, `${id}: nothing pays five of a kind`);
+    assert.equal(view.top, topLinePrize(0.96, id));
+    assert.ok(
+      Math.abs(view.top - (best * payScale(0.96, id)) / m.lines.length) < 1e-9,
+      `${id}: top line prize`,
+    );
+
+    // It belongs to a symbol a line can actually be built from: the
+    // wild never opens a line and the scatter does not pay on one, so
+    // if either owned the top row the card would be quoting a prize
+    // that cannot be won.
+    const owner = m.pay.findIndex((row) => row[m.cols - 3] === best);
+    assert.notEqual(owner, m.wild, `${id}: the top row is the wild's`);
+    assert.notEqual(owner, m.scatter, `${id}: the top row is the scatter's`);
+
+    // Every pay value scales together, so the headline does too.
+    for (const rtp of RTPS) {
+      assert.ok(
+        Math.abs(topLinePrize(rtp, id) / topLinePrize(0.96, id) - rtp / 0.96) < 1e-9,
+        `${id}: top line prize at rtp ${rtp}`,
+      );
+    }
+  }
+});
+
 /* ── Artwork ────────────────────────────────────────────────────── */
 
 // A typo in a symbol key renders as a broken image on the reels, which
@@ -488,6 +524,30 @@ test('every symbol key names an image that exists', () => {
       assert.ok(fs.existsSync(file), `${id}: missing artwork for ${key} (${file})`);
     }
   }
+});
+
+// slot-line-art.js is pure presentation data, so it can be checked here
+// rather than in a browser. The cabinet's face has to be one of the
+// machine's own symbols: a lead sprite that appears nowhere on the reels
+// would be advertising a symbol the player can never land.
+test('every line cabinet has presentation that tracks its registry', () => {
+  assert.deepEqual(Object.keys(LINE_ART), LINE_MACHINE_IDS, 'art list must track the registry');
+  const dir = path.join(ROOT, 'public', 'assets', 'symbols');
+  for (const id of LINE_MACHINE_IDS) {
+    const look = LINE_ART[id];
+    const m = getLineMachine(id);
+    assert.equal(look.id, id, 'art key must match its id');
+    assert.ok(m.symbols.includes(look.lead), `${id}: lead ${look.lead} is not on the reels`);
+    assert.ok(fs.existsSync(path.join(dir, `gem-${look.lead}.png`)), `${id}: missing lead artwork`);
+    assert.equal(artFor(look.lead), `/assets/symbols/gem-${look.lead}.png`);
+    assert.ok(look.run > 0 && look.gap > 0, `${id}: reel timing`);
+    assert.ok(look.land, `${id}: no landing style`);
+    assert.ok(look.sound.motif.length >= 2, `${id}: result motif too short`);
+  }
+  // Four cabinets that look and sound alike would be one cabinet.
+  assert.equal(new Set(LINE_MACHINE_IDS.map((id) => LINE_ART[id].lead)).size, LINE_MACHINE_IDS.length);
+  assert.equal(new Set(LINE_MACHINE_IDS.map((id) => LINE_ART[id].land)).size, LINE_MACHINE_IDS.length);
+  assert.equal(lineArt('gone'), undefined, 'an unknown cabinet has no art to fall back on');
 });
 
 test('the artwork credits every pack it ships', () => {

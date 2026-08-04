@@ -37,7 +37,10 @@
 
           <div class="cab-screen">
             <div class="reel-row" id="reel-row"></div>
-            <div class="pay-line"></div>
+            <div class="reel-grid" id="reel-grid" hidden>
+              <svg class="line-overlay" id="line-overlay" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div class="pay-line" id="pay-line"></div>
             <div class="cab-glass"></div>
           </div>
 
@@ -45,6 +48,7 @@
             <span class="mult-badge num" id="mult-badge"></span>
             <span class="net-value num" id="net-value"></span>
           </div>
+          <ul class="win-list" id="win-list"></ul>
         </section>
 
         <aside class="panel bet-box">
@@ -58,7 +62,7 @@
           <details>
             <summary data-t="paytable"></summary>
             <table class="data paytable">
-              <thead>
+              <thead id="paytable-head">
                 <tr><th data-t="pay_symbol"></th><th class="num" data-t="pay_mult"></th></tr>
               </thead>
               <tbody id="paytable-body"></tbody>
