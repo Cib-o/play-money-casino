@@ -119,6 +119,7 @@ export function createBlackjackTable(db) {
                            server_seed_hash, server_seed, client_seed, nonce, created_at)
        VALUES (?, ?, 'blackjack', ?, 0, ?, ?, ?, NULL, ?, ?, ?)`,
     ),
+    stakeRound: db.prepare('UPDATE rounds SET bet = ?, net = ? WHERE id = ?'),
     finalizeRound: db.prepare(
       `UPDATE rounds SET payout = ?, net = ?, outcome_json = ?, server_seed = ?, bet = ? WHERE id = ?`,
     ),
@@ -374,6 +375,13 @@ export function createBlackjackTable(db) {
     const row = stmts.balance.get(seat.userId);
     if (!row || row.balance < seat.baseBet) return false;
     stmts.setBalance.run(row.balance - seat.baseBet, seat.userId);
+    // The stake on the row moves with the money, in the same
+    // transaction. From here until finalize the player is down two bets,
+    // and if the process dies in that window the row is the only
+    // surviving record of it — left standing at one bet it would show a
+    // credit less lost than actually left the balance, and the floor
+    // total would never add up again.
+    stmts.stakeRound.run(seat.baseBet * 2, -seat.baseBet * 2, seat.roundRowId);
     return true;
   });
 
