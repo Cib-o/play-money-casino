@@ -9,6 +9,7 @@ import {
   makeDraw,
   replay,
 } from '../src/games/blackjack.js';
+import { inRound } from '../src/blackjack-table.js';
 import { openDb, nowISO } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { buildApp } from '../src/app.js';
@@ -111,6 +112,30 @@ async function login(app) {
   });
   return { sid: res.cookies.find((c) => c.name === 'sid').value };
 }
+
+// A seat showing cards but an empty betspot is a hand nobody staked
+// anything on. It used to happen every round: manageBots sits ~22% of
+// the bots out by zeroing their bet, but the deal let every bot in
+// regardless, so those seats were dealt and played with no chip under
+// them — indistinguishable, from the other chairs, from a bet that had
+// simply failed to render.
+test('no seat is dealt in without a wager behind it', () => {
+  const seat = (over) => ({ kind: 'empty', bet: 0, baseBet: 0, ...over });
+
+  assert.equal(inRound(seat({ kind: 'bot', bet: 25 })), true, 'betting bot plays');
+  assert.equal(inRound(seat({ kind: 'bot', bet: 0 })), false, 'bot sitting out is dealt in');
+
+  // A player is in only once closeBetting has actually charged them:
+  // `bet` is what they asked for, `baseBet` is what the table took.
+  assert.equal(inRound(seat({ kind: 'player', bet: 5, baseBet: 5 })), true, 'charged player plays');
+  assert.equal(
+    inRound(seat({ kind: 'player', bet: 5, baseBet: 0 })),
+    false,
+    'player whose bet never cleared is dealt in',
+  );
+  assert.equal(inRound(seat({ kind: 'player' })), false, 'player with no bet');
+  assert.equal(inRound(seat({})), false, 'empty seat');
+});
 
 test('blackjack over HTTP: deal debits, actions advance, resolution pays and records', async () => {
   const { db, app } = makeApp();

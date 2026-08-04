@@ -97,6 +97,18 @@ function emptySeat(index) {
   };
 }
 
+// Nobody is dealt a hand without a wager behind it. For a player that
+// means a bet the table actually charged (`baseBet`); for a bot it means
+// the one manageBots gave it, which is 0 for the ~22% that sit the round
+// out. Dealing to those anyway put cards on a seat with an empty
+// betspot — a hand nobody had staked anything on, which is both wrong
+// and, from the other chairs, unreadable: you could not tell a
+// sitting-out neighbour from one whose chip had failed to draw.
+export function inRound(seat) {
+  if (seat.kind === 'bot') return seat.bet > 0;
+  return seat.kind === 'player' && seat.baseBet > 0;
+}
+
 export function createBlackjackTable(db) {
   const stmts = {
     balance: db.prepare('SELECT balance FROM users WHERE id = ?'),
@@ -254,7 +266,8 @@ export function createBlackjackTable(db) {
   });
 
   function closeBetting() {
-    // charge and seat everyone who committed a valid bet; bots always play
+    // charge everyone who committed a valid bet; whoever is left with a
+    // stake — player or bot — is in the round
     const settings = readSettings(db);
     for (const seat of state.seats) {
       if (seat.kind === 'player') {
@@ -286,10 +299,6 @@ export function createBlackjackTable(db) {
     state.activeSeat = -1;
     state.version++;
     nextTurn();
-  }
-
-  function inRound(seat) {
-    return (seat.kind === 'bot') || (seat.kind === 'player' && seat.baseBet > 0);
   }
 
   // ── phase: acting ───────────────────────────────────────────────
