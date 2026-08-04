@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { STRINGS } from '../public/js/strings.js';
 import { FLOOR_IDS } from '../src/games/slot-floor.js';
 import { MACHINE_IDS as RETIRED_IDS } from '../src/games/slots.js';
-import { DEFAULT_SETTINGS } from '../src/db.js';
+import { DEFAULT_SETTINGS, CREDIT } from '../src/db.js';
+import { CREDIT as CLIENT_CREDIT } from '../public/js/i18n.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -110,6 +111,16 @@ test('every game the server ships is named in both languages', () => {
       assert.ok(`game_${game}` in STRINGS[lang], `${lang} is missing game_${game}`);
     }
   }
+});
+
+// The two halves of the app share no module — the browser cannot import
+// from src/ and the server does not serve itself — so the scale that
+// turns a wire amount into a printed one is written down twice. That is
+// deliberate; this is what keeps the duplication honest. Change one and
+// every balance on screen is off by a factor of a hundred, in silence,
+// because both numbers are plausible on their own.
+test('the browser and the server agree on what a credit is', () => {
+  assert.equal(CLIENT_CREDIT, CREDIT);
 });
 
 test('georgian strings actually contain georgian script', () => {

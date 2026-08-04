@@ -1,6 +1,6 @@
 import { initShell, el, toastError, onLocaleChange } from '../shell.js';
 import { api } from '../api.js';
-import { t, fmt, fmtDate } from '../i18n.js';
+import { t, fmt, fmtCredits, fmtDate } from '../i18n.js';
 
 const ctx = await initShell({ requireAuth: 'admin' });
 
@@ -29,14 +29,14 @@ if (ctx) {
     ]);
   }
 
-  const signed = (n) => (n >= 0 ? `+${fmt(n)}` : fmt(n));
+  const signed = (n) => (n >= 0 ? `+${fmtCredits(n)}` : fmtCredits(n));
   const netCls = (n) => (n > 0 ? 'win-text' : n < 0 ? 'lose-text' : '');
 
   // Inside the sum below the net is an operator and an amount, not a
   // signed number: written as `− 350 -55` the two minus signs are
   // different characters doing different jobs and the line stops reading
   // as arithmetic. This puts the sign where the other operators are.
-  const term = (n) => `${n < 0 ? '−' : '+'} ${fmt(Math.abs(n))}`;
+  const term = (n) => `${n < 0 ? '−' : '+'} ${fmtCredits(Math.abs(n))}`;
 
   function gameRows(tbody, rows) {
     tbody.textContent = '';
@@ -45,8 +45,8 @@ if (ctx) {
         el('tr', {}, [
           el('td', { text: t(`game_${g.game}`) }),
           el('td', { cls: 'num', text: fmt(g.rounds) }),
-          el('td', { cls: 'num', text: fmt(g.wagered) }),
-          el('td', { cls: 'num', text: fmt(g.paid_out) }),
+          el('td', { cls: 'num', text: fmtCredits(g.wagered) }),
+          el('td', { cls: 'num', text: fmtCredits(g.paid_out) }),
           el('td', { cls: `num ${netCls(g.net)}`, text: signed(g.net) }),
           el('td', { cls: 'num', text: returnText(g) }),
         ]),
@@ -66,7 +66,7 @@ if (ctx) {
       el('span', {
         cls: 'muted',
         text: view.reconciled
-          ? ` ${fmt(view.granted)} − ${fmt(view.removed)} ${term(view.net)} − ${fmt(view.in_flight.staked)} = ${fmt(view.balance ?? view.player.balance)}`
+          ? ` ${fmtCredits(view.granted)} − ${fmtCredits(view.removed)} ${term(view.net)} − ${fmtCredits(view.in_flight.staked)} = ${fmtCredits(view.balance ?? view.player.balance)}`
           : ` ${signed(view.drift)}`,
       }),
     );
@@ -76,10 +76,10 @@ if (ctx) {
     const stats = $('circ-stats');
     stats.textContent = '';
     stats.append(
-      stat('adm_circ_balance', fmt(floor.balance)),
-      stat('adm_circ_granted', fmt(floor.granted)),
-      stat('adm_circ_removed', fmt(floor.removed)),
-      stat('adm_circ_inplay', fmt(floor.in_flight.staked)),
+      stat('adm_circ_balance', fmtCredits(floor.balance)),
+      stat('adm_circ_granted', fmtCredits(floor.granted)),
+      stat('adm_circ_removed', fmtCredits(floor.removed)),
+      stat('adm_circ_inplay', fmtCredits(floor.in_flight.staked)),
       stat('adm_circ_net', signed(floor.net), netCls(floor.net)),
       stat('adm_col_rounds', fmt(floor.rounds)),
     );
@@ -94,9 +94,9 @@ if (ctx) {
     const stats = $('player-stats');
     stats.textContent = '';
     stats.append(
-      stat('balance_label', fmt(report.player.balance)),
-      stat('adm_circ_granted', fmt(report.granted)),
-      stat('adm_circ_removed', fmt(report.removed)),
+      stat('balance_label', fmtCredits(report.player.balance)),
+      stat('adm_circ_granted', fmtCredits(report.granted)),
+      stat('adm_circ_removed', fmtCredits(report.removed)),
       stat('adm_col_rounds', fmt(report.rounds)),
       stat('adm_circ_net', signed(report.net), netCls(report.net)),
       stat('adm_col_rtp', returnText(report)),
@@ -121,7 +121,7 @@ if (ctx) {
     const keep = pick.value;
     pick.textContent = '';
     for (const p of players) {
-      pick.append(el('option', { text: `${p.username} (${fmt(p.balance)})`, attrs: { value: p.id } }));
+      pick.append(el('option', { text: `${p.username} (${fmtCredits(p.balance)})`, attrs: { value: p.id } }));
     }
     if (keep) pick.value = keep;
     $('player-none').hidden = players.length > 0;

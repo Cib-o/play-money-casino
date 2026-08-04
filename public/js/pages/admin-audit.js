@@ -1,6 +1,6 @@
 import { initShell, el, toastError, onLocaleChange } from '../shell.js';
 import { api } from '../api.js';
-import { fmt, fmtDate } from '../i18n.js';
+import { fmtCredits, fmtDate } from '../i18n.js';
 
 const ctx = await initShell({ requireAuth: 'admin' });
 
@@ -21,12 +21,12 @@ if (ctx) {
           el('td', { text: fmtDate(a.created_at) }),
           el('td', { text: a.player_username }),
           el('td', { cls: 'muted', text: a.admin_username }),
-          el('td', { cls: 'num', text: fmt(a.before) }),
+          el('td', { cls: 'num', text: fmtCredits(a.before) }),
           el('td', {
             cls: `num ${a.delta >= 0 ? 'win-text' : 'lose-text'}`,
-            text: (a.delta >= 0 ? '+' : '') + fmt(a.delta),
+            text: (a.delta >= 0 ? '+' : '') + fmtCredits(a.delta),
           }),
-          el('td', { cls: 'num', text: fmt(a.after) }),
+          el('td', { cls: 'num', text: fmtCredits(a.after) }),
           el('td', { cls: 'muted', text: a.note }),
         ]),
       );

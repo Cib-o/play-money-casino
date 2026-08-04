@@ -8,7 +8,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../src/config.js';
-import { openDb, nowISO, readSettings } from '../src/db.js';
+import { openDb, nowISO, readSettings, CREDIT } from '../src/db.js';
 import { hashPassword, generatePassword } from '../src/auth.js';
 
 const config = getConfig({ requireSecret: false });
@@ -35,10 +35,12 @@ if (!admin) {
   lines.push(`admin      ${password}   (role: admin)`);
 }
 
+// Balances are written in credits here and stored in hundredths, which
+// is the one place in this script the distinction shows.
 const demoPlayers = [
-  { username: 'demo1', display: 'გიორგი', balance: 1000, locale: 'ka' },
-  { username: 'demo2', display: 'ნინო', balance: 2500, locale: 'ka' },
-  { username: 'demo3', display: 'Alex', balance: 500, locale: 'en' },
+  { username: 'demo1', display: 'გიორგი', balance: 1000 * CREDIT, locale: 'ka' },
+  { username: 'demo2', display: 'ნინო', balance: 2500 * CREDIT, locale: 'ka' },
+  { username: 'demo3', display: 'Alex', balance: 500 * CREDIT, locale: 'en' },
 ];
 
 const createAll = db.transaction(() => {
@@ -54,7 +56,9 @@ const createAll = db.transaction(() => {
     if (p.balance > 0) {
       insertAdjustment.run(randomUUID(), id, admin.id, p.balance, p.balance, nowISO());
     }
-    lines.push(`${p.username.padEnd(10)} ${password}   (balance: ${p.balance}, ${p.locale})`);
+    lines.push(
+      `${p.username.padEnd(10)} ${password}   (balance: ${p.balance / CREDIT}, ${p.locale})`,
+    );
   }
 });
 createAll();

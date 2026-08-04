@@ -1,6 +1,6 @@
 import { initShell, toast, toastError, onLocaleChange } from '../shell.js';
 import { api } from '../api.js';
-import { t, fmt } from '../i18n.js';
+import { t, fmtCredits } from '../i18n.js';
 import {
   sha256Hex,
   verifySlots,
@@ -92,7 +92,7 @@ const GAMES = {
       const bets = recorded ? recorded.outcome.bets : [];
       const out = await verifyRoulette({ serverSeed, clientSeed, nonce, bets });
       let text = pocketLabel(out.number);
-      if (bets.length) text += `  ·  ${fmt(out.payout)}`;
+      if (bets.length) text += `  ·  ${fmtCredits(out.payout)}`;
       return {
         text,
         matches: recorded
@@ -199,7 +199,7 @@ async function loadRound(id) {
     };
     $('recorded-wrap').hidden = false;
     $('recorded-result').textContent =
-      `${GAMES[round.game].describe(round.outcome)}  ·  ${fmt(round.payout)}`;
+      `${GAMES[round.game].describe(round.outcome)}  ·  ${fmtCredits(round.payout)}`;
   } catch (err) {
     recorded = null;
     toastError(err);

@@ -465,8 +465,11 @@ export function registerAdminRoutes(app) {
               additionalProperties: false,
               properties: {
                 rtp: { type: 'number', minimum: 0.8, maximum: 0.99 },
-                min_bet: { type: 'integer', minimum: 1, maximum: 1000000 },
-                max_bet: { type: 'integer', minimum: 1, maximum: 100000000 },
+                // In hundredths, so a minimum of 1 is the 0.01 floor and
+                // the ceilings are the same real amounts they were
+                // before the unit changed.
+                min_bet: { type: 'integer', minimum: 1, maximum: 100000000 },
+                max_bet: { type: 'integer', minimum: 1, maximum: 10000000000 },
                 default_balance: { type: 'integer', minimum: 0, maximum: 1000000000000 },
                 default_locale: { type: 'string', enum: ['ka', 'en'] },
                 site_name: { type: 'string', minLength: 1, maxLength: 40 },

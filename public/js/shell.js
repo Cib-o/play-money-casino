@@ -1,5 +1,5 @@
 import { api, ApiError } from './api.js';
-import { applyI18n, detectLocale, getLocale, setLocale, t, fmt } from './i18n.js';
+import { applyI18n, detectLocale, getLocale, setLocale, t, fmtCredits } from './i18n.js';
 import { sfx } from './sound.js';
 
 export const state = { me: null, pub: null };
@@ -115,7 +115,7 @@ function renderChrome() {
 
     if (state.me && state.me.role === 'player') {
       document.getElementById('balance-chip').hidden = false;
-      document.getElementById('balance-value').textContent = fmt(state.me.balance);
+      document.getElementById('balance-value').textContent = fmtCredits(state.me.balance);
     }
 
     for (const btn of header.querySelectorAll('.lang-switch button')) {
@@ -230,7 +230,7 @@ function switchLocale(locale) {
   }
   if (state.me) {
     state.me.balance !== undefined &&
-      (document.getElementById('balance-value').textContent = fmt(state.me.balance));
+      (document.getElementById('balance-value').textContent = fmtCredits(state.me.balance));
     api('/api/profile', { method: 'POST', body: { locale } }).catch(() => {});
   }
   for (const fn of localeListeners) fn(locale);
@@ -242,7 +242,7 @@ export function updateBalance(balance) {
   const chip = document.getElementById('balance-chip');
   const value = document.getElementById('balance-value');
   if (!chip || !value) return;
-  value.textContent = fmt(balance);
+  value.textContent = fmtCredits(balance);
   chip.classList.remove('bump');
   void chip.offsetWidth; // restart the animation
   chip.classList.add('bump');

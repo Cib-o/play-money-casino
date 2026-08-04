@@ -1,7 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { uniform, newSeedPair } from './rng.js';
 import { handTotal, isBlackjack, dealerPlay, settleOutcome } from './games/blackjack.js';
-import { readSettings, nowISO } from './db.js';
+import { readSettings, nowISO, CREDIT } from './db.js';
 import { AppError } from './errors.js';
 
 // ── Shared, server-authoritative blackjack table ──────────────────
@@ -199,7 +199,11 @@ export function createBlackjackTable(db) {
       seat.name = maskedName();
       seat.lastSeen = Date.now();
     }
-    const opts = [5, 25, 100].filter((v) => v <= settings.maxBet);
+    // The bots play in round credits — 5, 25 and 100 — which is what a
+    // person at a table does. The fine granularity below a credit is
+    // there for players who want it, not for filling the felt with
+    // stakes nobody would actually announce out loud.
+    const opts = [5, 25, 100].map((v) => v * CREDIT).filter((v) => v <= settings.maxBet);
     for (const seat of state.seats) {
       if (seat.kind !== 'bot') continue;
       if (randomInt(100) < 22) seat.bet = 0; // sit this round out

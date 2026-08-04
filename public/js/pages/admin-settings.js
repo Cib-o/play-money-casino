@@ -1,5 +1,6 @@
 import { initShell, el, toast, toastError, state } from '../shell.js';
 import { api } from '../api.js';
+import { CREDIT } from '../i18n.js';
 
 const ctx = await initShell({ requireAuth: 'admin' });
 
@@ -7,12 +8,18 @@ if (ctx) {
   const $ = (id) => document.getElementById(id);
   let settings = await api('/api/admin/settings');
 
+  // The API carries hundredths; the operator types credits. These are
+  // the only two places on the page where the two units meet, and the
+  // rounding on the way in is what keeps 0.07 from arriving as 6.999.
+  const toCredits = (units) => (units / CREDIT).toFixed(2);
+  const toUnits = (id) => Math.round(Number($(id).value) * CREDIT);
+
   function fill() {
     $('s-rtp').value = settings.rtp;
     $('s-site').value = settings.site_name;
-    $('s-min').value = settings.min_bet;
-    $('s-max').value = settings.max_bet;
-    $('s-balance').value = settings.default_balance;
+    $('s-min').value = toCredits(settings.min_bet);
+    $('s-max').value = toCredits(settings.max_bet);
+    $('s-balance').value = toCredits(settings.default_balance);
     $('s-locale').value = settings.default_locale;
     $('s-maxbots').value = settings.blackjack_max_bots;
 
@@ -43,9 +50,9 @@ if (ctx) {
         body: {
           rtp: Number($('s-rtp').value),
           site_name: $('s-site').value.trim(),
-          min_bet: Number($('s-min').value),
-          max_bet: Number($('s-max').value),
-          default_balance: Number($('s-balance').value),
+          min_bet: toUnits('s-min'),
+          max_bet: toUnits('s-max'),
+          default_balance: toUnits('s-balance'),
           default_locale: $('s-locale').value,
           blackjack_max_bots: Number($('s-maxbots').value),
           games,

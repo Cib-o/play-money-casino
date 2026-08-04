@@ -1,6 +1,6 @@
 import { initShell, state, el, toastError, updateBalance, onLocaleChange } from '../shell.js';
 import { api } from '../api.js';
-import { fmt, t, applyI18n } from '../i18n.js';
+import { fmt, fmtCredits, t, applyI18n } from '../i18n.js';
 import { createBetControl } from '../bet.js';
 import { sfx, slotKit } from '../sound.js';
 import { lineArt, artFor } from '../slot-line-art.js';
@@ -432,7 +432,12 @@ if (ctx) {
             label,
             symbolImg(w.symbol, 'wl-sym'),
             el('span', { cls: 'wl-run num', text: `×${w.run}` }),
-            el('span', { cls: 'wl-pay num', text: px(w.pay * scale * lineBet) }),
+            // A share of the stake, so it lands between hundredths more
+            // often than not; printed to the hundredth, which is as fine
+            // as the money itself goes. The rounded shares need not sum
+            // to the last hundredth of the headline, which is settled
+            // once from the total multiplier rather than line by line.
+            el('span', { cls: 'wl-pay num', text: fmtCredits(w.pay * scale * lineBet) }),
           ]),
         );
       });
@@ -446,7 +451,7 @@ if (ctx) {
             symbolImg(machine.scatter, 'wl-sym'),
             el('span', { cls: 'wl-run num', text: `×${scatterCells.length}` }),
             // the scatter is quoted against the whole stake, not a line
-            el('span', { cls: 'wl-pay num', text: px(scatterPay * scale * stake) }),
+            el('span', { cls: 'wl-pay num', text: fmtCredits(scatterPay * scale * stake) }),
           ]),
         );
       }
@@ -561,9 +566,9 @@ if (ctx) {
           // it is what the spin cost — a partial return is still a loss,
           // and printing the 40 that came back off a 100 stake as though
           // it were the result would be the wrong number in bold.
-          $('ro-amount').textContent = net < 0 ? `−${fmt(-net)}` : fmt(payout);
+          $('ro-amount').textContent = net < 0 ? `−${fmtCredits(-net)}` : fmtCredits(payout);
           $('mult-badge').textContent = `${px(mult)}×`;
-          $('ro-net').textContent = net > 0 ? `+${fmt(net)}` : net < 0 ? '' : '±0';
+          $('ro-net').textContent = net > 0 ? `+${fmtCredits(net)}` : net < 0 ? '' : '±0';
           // The same short result tone whatever the size of the win —
           // nothing here gets louder for a bigger number.
           kit.result(net > 0 ? 'win' : net === 0 ? 'even' : 'loss');

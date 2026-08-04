@@ -1,16 +1,19 @@
-import { initShell, state, el, toast, toastError, updateBalance } from '../shell.js';
+import { initShell, el, toast, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
-import { t, fmt } from '../i18n.js';
+import { t, fmtCredits, CREDIT } from '../i18n.js';
 import { sfx } from '../sound.js';
 
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-const CHIP_VALUES = [1, 5, 10, 25, 100];
+// Written in credits, played in hundredths. The tenth is the smallest
+// chip on the layout, so a player who wants to spread a single credit
+// across a dozen numbers can.
+const CHIP_CREDITS = [0.1, 1, 5, 10, 25, 100];
 
 const ctx = await initShell({ requireAuth: true });
 
 if (ctx) {
   const $ = (id) => document.getElementById(id);
-  let chip = 5;
+  let chip = 5 * CREDIT;
   let bets = [];
   let splitFirst = null;
   let busy = false;
@@ -79,15 +82,18 @@ if (ctx) {
 
   // ── chips ───────────────────────────────────────────────────────
   const chipRow = $('chips');
-  for (const value of CHIP_VALUES) {
+  for (const credits of CHIP_CREDITS) {
+    const value = Math.round(credits * CREDIT);
     const button = el('button', {
       cls: `chip${value === chip ? ' selected' : ''}`,
-      text: String(value),
+      text: String(credits),
       attrs: { type: 'button' },
       on: {
         click: () => {
           chip = value;
-          for (const c of chipRow.children) c.classList.toggle('selected', Number(c.textContent) === chip);
+          // Marked by which button was pressed, not by reading the face
+          // back off it — the face says 0.1 where the value is 10.
+          for (const c of chipRow.children) c.classList.toggle('selected', c === button);
         },
       },
     });
@@ -155,7 +161,7 @@ if (ctx) {
       total += bet.amount;
       const row = el('div', { cls: 'bet-row' }, [
         el('span', { text: betLabel(bet) }),
-        el('strong', { cls: 'num', text: fmt(bet.amount) }),
+        el('strong', { cls: 'num', text: fmtCredits(bet.amount) }),
         el('button', {
           cls: 'bet-remove', text: '✕', attrs: { type: 'button' },
           on: { click: () => { bets = bets.filter((b) => b !== bet); renderBets(); } },
@@ -164,7 +170,7 @@ if (ctx) {
       if (winners && winners.has(betKey(bet))) row.classList.add('won');
       list.append(row);
     }
-    $('total').textContent = fmt(total);
+    $('total').textContent = fmtCredits(total);
     $('spin-btn').disabled = busy || total === 0;
 
     for (const [n, cell] of numberCells) {
@@ -233,12 +239,12 @@ if (ctx) {
       const payout = res.round.payout;
       const line = $('result');
       if (payout > 0) {
-        line.textContent = `+${fmt(payout)}`;
+        line.textContent = `+${fmtCredits(payout)}`;
         line.className = 'result-line win-text';
         if (payout >= total * 5) sfx.big();
         else sfx.win();
       } else {
-        line.textContent = `−${fmt(total)}`;
+        line.textContent = `−${fmtCredits(total)}`;
         line.className = 'result-line lose-text';
         sfx.lose();
       }

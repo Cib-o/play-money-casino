@@ -484,6 +484,7 @@ body.bj-page .bj-stage {
   flex: 0 0 auto;
   user-select: none;
 }
+.chip-0-1 { --chip: #0f8a8a; }
 .chip-1 { --chip: #6b7280; }
 .chip-5 { --chip: #d43a4a; }
 .chip-25 { --chip: #2f9e57; }

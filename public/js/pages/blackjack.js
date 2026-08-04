@@ -1,6 +1,6 @@
 import { initShell, state, el, toast, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
-import { t, fmt } from '../i18n.js';
+import { t, fmtCredits, CREDIT } from '../i18n.js';
 import { sfx } from '../sound.js';
 import { cardEl } from '../cards.js';
 
@@ -13,7 +13,13 @@ import { cardEl } from '../cards.js';
 // resets it, Leave stands you up from your seat. Every POST returns the
 // fresh snapshot, so the table reacts immediately between polls.
 
-const CHIP_BASE = [1, 5, 25, 100, 500, 1000];
+// Chip denominations in credits, and the same list in the hundredths
+// everything else counts in. The tenth is here so the table's minimum
+// is something a rack can actually express: the felt advertises a floor
+// of 0.01, and a rack whose smallest coin was a whole credit would be
+// quoting a limit no player could reach.
+const CHIP_BASE = [0.1, 1, 5, 25, 100, 500, 1000];
+const chipUnits = CHIP_BASE.map((v) => Math.round(v * CREDIT));
 const POLL_MS = 700;
 const PHASE_LABEL = { betting: 'bj_place_bets', acting: 'bj_dealing', dealer: 'bj_dealer_turn', payout: 'bj_next_round' };
 const RESULT_KEY = { blackjack: 'bj_blackjack', win: 'bj_win', lose: 'bj_lose', push: 'bj_push', bust: 'bj_bust' };
@@ -27,7 +33,7 @@ if (ctx) {
   const MAX = state.pub.max_bet;
   const myName = (state.me.display_name || '').trim() || state.me.username;
 
-  let selectedChip = CHIP_BASE.find((v) => v >= MIN && v <= MAX) || MIN;
+  let selectedChip = chipUnits.find((v) => v >= MIN && v <= MAX) || MIN;
   let clockOffset = 0;
   let lastNonce = -1;
   let lastBalance = null;
@@ -62,19 +68,29 @@ if (ctx) {
   const hintEl = el('div', { cls: 'bj-hint' });
   $('rack').parentElement.insertBefore(hintEl, $('rack'));
 
+  // The coin's colour and face come from its credit value, which is what
+  // is painted on it — `chip-25` in the stylesheet, not `chip-2500`. The
+  // decimal point becomes a dash so the tenth-credit chip has a class
+  // name a selector can address without escaping it.
+  const coinEl = (units, extra = '') => {
+    const credits = units / CREDIT;
+    return el('span', {
+      cls: `chip-coin chip-${String(credits).replace('.', '-')}${extra}`,
+      text: credits >= 1000 ? '1k' : String(credits),
+    });
+  };
+
   function greedyChips(amount) {
     const out = [];
     let left = amount;
-    for (const v of [...CHIP_BASE].reverse()) {
+    for (const v of [...chipUnits].reverse()) {
       while (left >= v && out.length < 5) { out.push(v); left -= v; }
     }
     return out;
   }
   function renderChips(stackEl, amount) {
     stackEl.textContent = '';
-    for (const v of greedyChips(amount)) {
-      stackEl.append(el('span', { cls: `chip-coin chip-${v}`, text: v >= 1000 ? '1k' : String(v) }));
-    }
+    for (const v of greedyChips(amount)) stackEl.append(coinEl(v));
   }
   function hueFor(seed) {
     let h = 0;
@@ -85,13 +101,16 @@ if (ctx) {
   // ── chip rack: click selects the active chip ────────────────────
   function buildRack() {
     const rack = $('rack');
-    const values = CHIP_BASE.filter((v) => v <= MAX);
+    // Bounded at both ends, so every coin on the rack is a bet the table
+    // will actually take. A seat left below the minimum is zeroed when
+    // betting closes and quietly sits the round out, so a rack offering
+    // a tenth at a table with a one-credit floor would be inviting the
+    // player to be skipped without being told why.
+    const values = chipUnits.filter((v) => v >= MIN && v <= MAX);
     for (const v of values.length ? values : [MIN]) {
-      const coin = el('span', {
-        cls: `chip-coin chip-${v}${v === selectedChip ? ' selected' : ''}`,
-        text: v >= 1000 ? '1k' : String(v),
-        attrs: { role: 'button', tabindex: '0' },
-      });
+      const coin = coinEl(v, v === selectedChip ? ' selected' : '');
+      coin.setAttribute('role', 'button');
+      coin.setAttribute('tabindex', '0');
       coin.addEventListener('click', () => {
         selectedChip = v;
         for (const c of rack.children) c.classList.toggle('selected', c === coin);
@@ -101,7 +120,7 @@ if (ctx) {
     }
   }
   buildRack();
-  $('limits').textContent = `${t('bj_min')}: ${fmt(MIN)}  ·  ${t('bj_max')}: ${fmt(MAX)}`;
+  $('limits').textContent = `${t('bj_min')}: ${fmtCredits(MIN)}  ·  ${t('bj_max')}: ${fmtCredits(MAX)}`;
 
   // Fullscreen toggle — offered only where the API exists (not iOS
   // Safari, which is why the rotate-to-play gate is the real fix).
@@ -234,7 +253,7 @@ if (ctx) {
     // "you win" is worth more as a number. net is the table's own
     // figure, signed, and 0 on a push — which prints nothing.
     const net = result === '' || snap.phase !== 'payout' ? 0 : snap.seats[snap.your_seat].net;
-    $('status-net').textContent = net > 0 ? `+${fmt(net)}` : net < 0 ? `−${fmt(-net)}` : '';
+    $('status-net').textContent = net > 0 ? `+${fmtCredits(net)}` : net < 0 ? `−${fmtCredits(-net)}` : '';
 
     $('status-count').textContent = remaining === null ? '' : String(remaining);
     const urgent = remaining !== null && remaining <= 3;
@@ -282,7 +301,7 @@ if (ctx) {
     view.avatar.style.setProperty('--hue', seat.occupied ? hueFor(seat.name || String(seat.index)) : 200);
     if (seat.bet > 0) {
       renderChips(view.stack, seat.bet);
-      view.betAmount.textContent = fmt(seat.bet);
+      view.betAmount.textContent = fmtCredits(seat.bet);
     } else {
       view.stack.textContent = '';
       view.betAmount.textContent = '';
@@ -315,7 +334,7 @@ if (ctx) {
     $('rack').style.display = betting && seated ? 'flex' : 'none';
     $('clear-btn').hidden = !(betting && seated && myBet > 0);
     $('leave-btn').hidden = !(betting && seated);
-    $('total-bet').textContent = fmt(myBet);
+    $('total-bet').textContent = fmtCredits(myBet);
 
     if (betting && !seated) hintEl.textContent = t('bj_choose_seat');
     else if (betting && seated && myBet === 0) hintEl.textContent = t('bj_place_hint');
@@ -360,7 +379,7 @@ if (ctx) {
       updateBalance(snap.your_balance);
     }
     const bjBal = $('bj-balance');
-    if (bjBal) bjBal.textContent = `◆ ${fmt(snap.your_balance)}`;
+    if (bjBal) bjBal.textContent = `◆ ${fmtCredits(snap.your_balance)}`;
     lastSnap = snap;
     fitStage(); // re-fit: card/dock changes can alter the table height
   }

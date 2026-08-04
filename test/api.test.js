@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
-import { openDb, nowISO } from '../src/db.js';
+import { openDb, nowISO, CREDIT } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { buildApp } from '../src/app.js';
 import { MACHINE_IDS } from '../src/games/slots.js';
@@ -132,14 +132,14 @@ test('admin creates a player; the returned password works; duplicates are reject
   assert.equal(created.statusCode, 201, created.body);
   const { user, password } = JSON.parse(created.body);
   assert.equal(user.username, 'newguy'); // stored lowercase
-  assert.equal(user.balance, 1000); // default_balance setting
+  assert.equal(user.balance, 1000 * CREDIT); // default_balance setting
   assert.match(password, /^[a-z]+-[a-z]+-[a-z]+-\d\d$/);
 
   // Starting balance left an audit row.
   const adj = db.prepare('SELECT * FROM balance_adjustments WHERE user_id = ?').all(user.id);
   assert.equal(adj.length, 1);
   assert.equal(adj[0].before, 0);
-  assert.equal(adj[0].after, 1000);
+  assert.equal(adj[0].after, 1000 * CREDIT);
 
   await login(app, 'newguy', password);
 
@@ -208,7 +208,7 @@ test('balance edits: set and delta both audit; negative results are rejected', a
 
 test('slots: bets are validated against min/max and balance', async () => {
   const { db, app } = makeApp();
-  addUser(db, { username: 'p1', balance: 300 });
+  addUser(db, { username: 'p1', balance: 300 * CREDIT });
   const cookies = await login(app, 'p1');
 
   const zero = await app.inject({
@@ -216,26 +216,38 @@ test('slots: bets are validated against min/max and balance', async () => {
   });
   assert.equal(zero.statusCode, 400); // below schema minimum
 
+  // A fraction of a credit is not a rounding error to be swallowed or
+  // rejected — one hundredth is the smallest stake the system has, and
+  // it must go through and be charged as exactly that.
+  const penny = await app.inject({
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 1 },
+  });
+  assert.equal(penny.statusCode, 200, penny.body);
+  assert.equal(JSON.parse(penny.body).round.bet, 1);
+  const afterPenny = JSON.parse(penny.body).balance;
+  assert.equal(afterPenny, 300 * CREDIT - 1 + JSON.parse(penny.body).round.payout);
+
   const tooBig = await app.inject({
-    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 501 },
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 501 * CREDIT },
   });
   assert.equal(JSON.parse(tooBig.body).error, 'err_bet_too_large');
 
   const broke = await app.inject({
-    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 400 },
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 400 * CREDIT },
   });
   assert.equal(JSON.parse(broke.body).error, 'err_insufficient_balance');
 
   const unknown = await app.inject({
-    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5, hax: 1 },
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5 * CREDIT, hax: 1 },
   });
   assert.equal(unknown.statusCode, 400);
   assert.equal(JSON.parse(unknown.body).error, 'err_validation');
 
-  // Nothing above touched the balance or wrote a round.
-  assert.equal(db.prepare('SELECT COUNT(*) AS c FROM rounds').get().c, 0);
+  // Only the one-hundredth spin above got through; nothing else touched
+  // the balance or wrote a round.
+  assert.equal(db.prepare('SELECT COUNT(*) AS c FROM rounds').get().c, 1);
   const me = await app.inject({ method: 'GET', url: '/api/me', cookies });
-  assert.equal(JSON.parse(me.body).user.balance, 300);
+  assert.equal(JSON.parse(me.body).user.balance, afterPenny);
   await app.close();
 });
 

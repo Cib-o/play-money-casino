@@ -37,8 +37,31 @@ export function applyI18n(root) {
 
 const intlLocale = () => (current === 'ka' ? 'ka-GE' : 'en-US');
 
+/**
+ * Hundredths of a credit per credit. Every amount of money the server
+ * sends or receives is an integer count of these, so nothing on the
+ * wire or in the database is ever a decimal; see the note in src/db.js.
+ * A test pins this against the server's copy.
+ */
+export const CREDIT = 100;
+
+/** Plain integer formatting — round counts, seats, spins. Not money. */
 export function fmt(n) {
   return new Intl.NumberFormat(intlLocale()).format(n);
+}
+
+/**
+ * Money, given in hundredths and printed in credits. Always two
+ * decimals: the smallest stake in the house is 0.01, and a win of five
+ * hundredths shown as `0.05` next to a win of five credits shown as `5`
+ * is one glance away from being read as the same number. Fixed places
+ * make the column mean one thing.
+ */
+export function fmtCredits(units) {
+  return new Intl.NumberFormat(intlLocale(), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(units / CREDIT);
 }
 
 export function fmtDate(iso) {

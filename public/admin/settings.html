@@ -24,17 +24,19 @@
           <label for="s-site" data-t="adm_site_name"></label>
           <input id="s-site" type="text" maxlength="40" required>
         </div>
+        <!-- Credits, to two places: the floor the house can set is 0.01. -->
         <div class="form-row">
           <label for="s-min" data-t="adm_min_bet"></label>
-          <input id="s-min" type="number" min="1" step="1" required>
+          <input id="s-min" type="number" min="0.01" step="0.01" required>
+          <p class="muted hint" data-t="adm_bet_hint"></p>
         </div>
         <div class="form-row">
           <label for="s-max" data-t="adm_max_bet"></label>
-          <input id="s-max" type="number" min="1" step="1" required>
+          <input id="s-max" type="number" min="0.01" step="0.01" required>
         </div>
         <div class="form-row">
           <label for="s-balance" data-t="adm_default_balance"></label>
-          <input id="s-balance" type="number" min="0" step="1" required>
+          <input id="s-balance" type="number" min="0" step="0.01" required>
         </div>
         <div class="form-row">
           <label for="s-locale" data-t="adm_default_locale"></label>

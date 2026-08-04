@@ -1,6 +1,6 @@
 import { initShell, state, el, toastError, updateBalance } from '../shell.js';
 import { api } from '../api.js';
-import { fmt, getLocale } from '../i18n.js';
+import { fmtCredits, getLocale } from '../i18n.js';
 import { createBetControl } from '../bet.js';
 import { sfx } from '../sound.js';
 
@@ -96,12 +96,12 @@ if (ctx) {
       marker.style.left = `${out.roll}%`;
       const line = $('result');
       if (out.win) {
-        line.textContent = `+${fmt(res.round.payout)}`;
+        line.textContent = `+${fmtCredits(res.round.payout)}`;
         line.className = 'result-line win-text';
         if (res.round.payout >= stake * 5) sfx.big();
         else sfx.win();
       } else {
-        line.textContent = `−${fmt(stake)}`;
+        line.textContent = `−${fmtCredits(stake)}`;
         line.className = 'result-line lose-text';
         sfx.lose();
       }

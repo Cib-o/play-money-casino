@@ -585,3 +585,38 @@ test('an unknown id is not silently resolved to a real machine', () => {
   assert.equal(getLineMachine('not-a-machine'), undefined);
   assert.equal(LINE_MACHINES['not-a-machine'], undefined);
 });
+
+// A twenty-line cabinet splits the stake twenty ways, so most winning
+// combinations are worth a fraction of it. While a credit was the
+// smallest amount that existed, `Math.round(bet * mult)` sent every one
+// of those to zero at the minimum stake: the line lit up on the screen
+// and nothing arrived in the balance. Below a credit the arithmetic now
+// has room, and the same spins that used to vanish are paid.
+test('sub-credit wins survive the rounding that used to erase them', async () => {
+  const floor = await import('../src/games/slot-floor.js');
+  const { CREDIT } = await import('../src/db.js');
+  const args = { serverSeed: 'rounding-probe', clientSeed: 'c', rtp: 0.96 };
+
+  let erased = 0;
+  let fractional = 0;
+  let paid = 0;
+  for (const machine of floor.FLOOR_IDS) {
+    for (let nonce = 0; nonce < 600; nonce++) {
+      // The same spin — same seed, same nonce, same machine, so the same
+      // symbols — settled at one hundredth of a credit and at one whole
+      // credit. Only the resolution of the money differs.
+      const coarse = floor.spinFloor({ ...args, nonce, machine, bet: 1 });
+      const fine = floor.spinFloor({ ...args, nonce, machine, bet: CREDIT });
+      assert.equal(coarse.mult, fine.mult, `${machine}/${nonce}: the draw itself must not depend on the stake`);
+      if (fine.payout > 0) {
+        paid++;
+        if (coarse.payout === 0) erased++;
+        if (fine.payout % CREDIT !== 0) fractional++;
+      }
+    }
+  }
+
+  assert.ok(paid > 400, `only ${paid} winning spins in the sample`);
+  assert.ok(erased > 100, `only ${erased} of ${paid} wins were being rounded away — expected the artifact to be common`);
+  assert.ok(fractional > 300, `only ${fractional} of ${paid} wins are worth a fraction of a credit`);
+});

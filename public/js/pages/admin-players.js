@@ -1,6 +1,6 @@
 import { initShell, el, toast, toastError, copyText } from '../shell.js';
 import { api } from '../api.js';
-import { t, fmt, fmtDate } from '../i18n.js';
+import { fmt, fmtCredits, fmtDate, CREDIT } from '../i18n.js';
 import { onLocaleChange } from '../shell.js';
 import { STRINGS } from '../strings.js';
 
@@ -17,9 +17,15 @@ if (ctx) {
     btn.addEventListener('click', () => btn.closest('dialog').close());
   }
 
+  // Balances travel as hundredths and are typed as credits; these are
+  // the only places on the page where the two units meet. The rounding
+  // is what keeps a typed 0.07 from arriving as 6.999.
+  const toCredits = (units) => (units / CREDIT).toFixed(2);
+  const toUnits = (text) => Math.round(Number(text) * CREDIT);
+
   // ── create player ───────────────────────────────────────────────
   function prefillCreate() {
-    $('c-balance').value = settings.default_balance;
+    $('c-balance').value = toCredits(settings.default_balance);
     $('c-locale').value = settings.default_locale;
   }
   prefillCreate();
@@ -39,7 +45,7 @@ if (ctx) {
     const body = { username: $('c-username').value.trim() };
     const display = $('c-display').value.trim();
     if (display) body.display_name = display;
-    if ($('c-balance').value !== '') body.balance = Number($('c-balance').value);
+    if ($('c-balance').value !== '') body.balance = toUnits($('c-balance').value);
     body.locale = $('c-locale').value;
     const pw = $('c-password').value.trim();
     if (pw) body.password = pw;
@@ -76,7 +82,7 @@ if (ctx) {
         el('tr', {}, [
           el('td', { text: p.username }),
           el('td', { text: p.display_name }),
-          el('td', { cls: 'num', text: fmt(p.balance) }),
+          el('td', { cls: 'num', text: fmtCredits(p.balance) }),
           el('td', { cls: 'num', text: fmt(p.rounds) }),
           el('td', {}, [
             el('span', {
@@ -146,7 +152,7 @@ if (ctx) {
 
   async function openBalance(p) {
     currentPlayer = p;
-    $('bal-current').textContent = `${p.username} — ${fmt(p.balance)}`;
+    $('bal-current').textContent = `${p.username} — ${fmtCredits(p.balance)}`;
     bSet.value = '';
     bDelta.value = '';
     $('b-note').value = '';
@@ -161,14 +167,14 @@ if (ctx) {
     for (const a of res.items) {
       const delta = el('td', {
         cls: `num ${a.delta >= 0 ? 'win-text' : 'lose-text'}`,
-        text: (a.delta >= 0 ? '+' : '') + fmt(a.delta),
+        text: (a.delta >= 0 ? '+' : '') + fmtCredits(a.delta),
       });
       body.append(
         el('tr', {}, [
           el('td', { text: fmtDate(a.created_at) }),
-          el('td', { cls: 'num', text: fmt(a.before) }),
+          el('td', { cls: 'num', text: fmtCredits(a.before) }),
           delta,
-          el('td', { cls: 'num', text: fmt(a.after) }),
+          el('td', { cls: 'num', text: fmtCredits(a.after) }),
           el('td', { cls: 'muted', text: a.note }),
         ]),
       );
@@ -179,8 +185,8 @@ if (ctx) {
     event.preventDefault();
     if (!currentPlayer) return;
     const body = {};
-    if (bSet.value.trim() !== '') body.set = Number(bSet.value);
-    else if (bDelta.value.trim() !== '') body.delta = Number(bDelta.value);
+    if (bSet.value.trim() !== '') body.set = toUnits(bSet.value);
+    else if (bDelta.value.trim() !== '') body.delta = toUnits(bDelta.value);
     else return;
     const note = $('b-note').value.trim();
     if (note) body.note = note;
@@ -190,7 +196,7 @@ if (ctx) {
         body,
       });
       currentPlayer.balance = res.balance;
-      $('bal-current').textContent = `${currentPlayer.username} — ${fmt(res.balance)}`;
+      $('bal-current').textContent = `${currentPlayer.username} — ${fmtCredits(res.balance)}`;
       bSet.value = '';
       bDelta.value = '';
       $('b-note').value = '';
