@@ -65,6 +65,8 @@ test('player sessions get 403 on every admin route', async () => {
     ['GET', '/api/admin/rounds'],
     ['GET', '/api/admin/settings'],
     ['GET', '/api/admin/players/x/adjustments'],
+    ['GET', '/api/admin/players/x/analytics'],
+    ['GET', '/api/admin/circulation'],
     ['POST', '/api/admin/players', { username: 'zzz' }],
     ['POST', '/api/admin/players/x/balance', { set: 10 }],
     ['POST', '/api/admin/players/x/reset-password'],

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { STRINGS } from '../public/js/strings.js';
 import { FLOOR_IDS } from '../src/games/slot-floor.js';
 import { MACHINE_IDS as RETIRED_IDS } from '../src/games/slots.js';
+import { DEFAULT_SETTINGS } from '../src/db.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -91,6 +92,24 @@ test('every string key the frontend asks for exists', () => {
     }
   }
   assert.deepEqual(missing, [], 'keys used but never defined');
+});
+
+// The analytics tables label each row with t(`game_${row.game}`), built
+// from whatever the rounds table holds — a key the walk above cannot see,
+// because it is assembled at runtime rather than written out. So the
+// games are checked against the list the server actually ships: add a
+// fifth game and forget its name, and the admin's report would print a
+// bare `game_poker` at them instead of failing here.
+test('every game the server ships is named in both languages', () => {
+  const games = Object.keys(DEFAULT_SETTINGS)
+    .filter((key) => key.startsWith('game_'))
+    .map((key) => key.slice(5));
+  assert.ok(games.length >= 4, `only found ${games.length} games in the defaults`);
+  for (const game of games) {
+    for (const lang of ['en', 'ka']) {
+      assert.ok(`game_${game}` in STRINGS[lang], `${lang} is missing game_${game}`);
+    }
+  }
 });
 
 test('georgian strings actually contain georgian script', () => {

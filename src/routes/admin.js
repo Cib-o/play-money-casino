@@ -26,6 +26,36 @@ function settingsView(db) {
   };
 }
 
+// A realized RTP is a sample mean, and over anything short of a few
+// thousand rounds a very noisy one — three lucky spins read as 340%.
+// Published bare it invites ordinary variance to be mistaken for a
+// broken paytable, so the figure never leaves here without its spread.
+//
+// The headline is money-weighted, paid out over wagered, which is what
+// RTP means. Its standard error is the per-round return's deviation
+// scaled by sqrt(Σbet²)/Σbet — the standard error of a weighted mean,
+// which collapses to sd/sqrt(n) when every stake is the same size.
+function withReturn(row) {
+  const totals = {
+    rounds: row.rounds,
+    wagered: row.wagered,
+    paid_out: row.paid_out,
+    net: row.net,
+    won: row.won,
+    lost: row.lost,
+    rtp: null,
+    rtp_stderr: null,
+  };
+  if (!row.ratio_n || row.wagered <= 0) return totals;
+  totals.rtp = row.paid_out / row.wagered;
+  // One round is a point, not a sample; it has no spread to report.
+  if (row.ratio_n < 2) return totals;
+  const mean = row.ret_sum / row.ratio_n;
+  const variance = Math.max(0, (row.ret_sq - row.ratio_n * mean * mean) / (row.ratio_n - 1));
+  totals.rtp_stderr = (Math.sqrt(variance) * Math.sqrt(row.bet_sq)) / row.wagered;
+  return totals;
+}
+
 export function registerAdminRoutes(app) {
   const { db } = app;
 
@@ -288,6 +318,140 @@ export function registerAdminRoutes(app) {
           return { items, page: req.query.page, total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
         },
       );
+
+      // ── analytics ───────────────────────────────────────────────
+      // A shared-table round is written when the cards come out and
+      // rewritten when it settles, so between those two moments the row
+      // is real but has no outcome yet: payout 0, result null. The stake
+      // has genuinely left the player's balance, so those rows count in
+      // the money; they stay out of every return figure, where a payout
+      // that simply has not happened yet would read as a total loss.
+      //
+      // `IS 1` and not `= 1`: a slots or dice round has no `table` key at
+      // all, so json_extract hands back NULL, and NULL = 1 is itself NULL
+      // — which would make the negation NULL too and quietly drop every
+      // round that is not blackjack from every figure below. `IS` is the
+      // null-safe comparison and answers false, as intended.
+      const IN_FLIGHT =
+        "json_extract(r.outcome_json, '$.table') IS 1 AND json_extract(r.outcome_json, '$.result') IS NULL";
+      const SETTLED = `NOT (${IN_FLIGHT})`;
+
+      // The money, plus the three sums needed to say how firm the return
+      // is: how many rounds carried a stake, the squared stakes, and the
+      // first two moments of the per-round return ratio.
+      const TOTALS = `
+        COUNT(*) AS rounds,
+        COALESCE(SUM(r.bet), 0) AS wagered,
+        COALESCE(SUM(r.payout), 0) AS paid_out,
+        COALESCE(SUM(r.net), 0) AS net,
+        COALESCE(SUM(CASE WHEN r.net > 0 THEN r.net ELSE 0 END), 0) AS won,
+        COALESCE(-SUM(CASE WHEN r.net < 0 THEN r.net ELSE 0 END), 0) AS lost,
+        COUNT(CASE WHEN r.bet > 0 THEN 1 END) AS ratio_n,
+        COALESCE(SUM(CASE WHEN r.bet > 0 THEN CAST(r.bet AS REAL) * r.bet END), 0) AS bet_sq,
+        COALESCE(SUM(CASE WHEN r.bet > 0 THEN CAST(r.payout AS REAL) / r.bet END), 0) AS ret_sum,
+        COALESCE(SUM(CASE WHEN r.bet > 0
+                     THEN (CAST(r.payout AS REAL) / r.bet) * (CAST(r.payout AS REAL) / r.bet) END), 0) AS ret_sq`;
+
+      const grantsFor = (where) => `
+        SELECT COUNT(*) AS adjustments,
+               COALESCE(SUM(CASE WHEN delta > 0 THEN delta ELSE 0 END), 0) AS granted,
+               COALESCE(-SUM(CASE WHEN delta < 0 THEN delta ELSE 0 END), 0) AS removed
+        FROM balance_adjustments ${where}`;
+      const inFlightFor = (where) => `
+        SELECT COUNT(*) AS rounds, COALESCE(-SUM(r.net), 0) AS staked
+        FROM rounds r WHERE ${where} ${IN_FLIGHT}`;
+
+      const q = {
+        floorTotals: db.prepare(`SELECT ${TOTALS} FROM rounds r WHERE ${SETTLED}`),
+        floorByGame: db.prepare(
+          `SELECT r.game, ${TOTALS} FROM rounds r WHERE ${SETTLED} GROUP BY r.game ORDER BY r.game`,
+        ),
+        floorInFlight: db.prepare(inFlightFor('')),
+        floorGrants: db.prepare(grantsFor('')),
+        // Every credit that exists, not just the players' — an admin is
+        // created with nothing and no endpoint can grant them any, but
+        // counting the whole table means the check below cannot be
+        // satisfied by a balance it forgot to look at.
+        floorCredits: db.prepare(
+          `SELECT COALESCE(SUM(balance), 0) AS balance, COUNT(*) AS users,
+                  COALESCE(SUM(CASE WHEN role = 'player' THEN 1 ELSE 0 END), 0) AS players
+           FROM users`,
+        ),
+        playerTotals: db.prepare(`SELECT ${TOTALS} FROM rounds r WHERE r.user_id = ? AND ${SETTLED}`),
+        playerByGame: db.prepare(
+          `SELECT r.game, ${TOTALS} FROM rounds r WHERE r.user_id = ? AND ${SETTLED}
+           GROUP BY r.game ORDER BY r.game`,
+        ),
+        playerInFlight: db.prepare(inFlightFor('r.user_id = ? AND')),
+        playerGrants: db.prepare(grantsFor('WHERE user_id = ?')),
+        // Best round by net, not by payout: 400 back on a 500 stake is
+        // the shape of a loss however large the payout column reads. A
+        // player who never came out ahead gets their smallest loss here,
+        // which is the true answer and shows as a negative number.
+        playerBest: db.prepare(
+          `SELECT r.game, r.bet, r.payout, r.net, r.created_at FROM rounds r
+           WHERE r.user_id = ? AND ${SETTLED} ORDER BY r.net DESC, r.rowid ASC LIMIT 1`,
+        ),
+        playerSpan: db.prepare(
+          'SELECT MIN(created_at) AS first_round, MAX(created_at) AS last_round FROM rounds WHERE user_id = ?',
+        ),
+      };
+
+      // Credits are granted by an admin and after that only move by
+      // being staked; nothing mints them and nothing burns them. So the
+      // balances on hand must equal what was granted, less what was
+      // taken back, plus what play has returned, less what is sitting in
+      // hands still being played. If that ever fails to close, something
+      // wrote to a balance without leaving a record, and the dashboard
+      // says so instead of showing a total it cannot account for.
+      function reconcile(balance, grants, settled, inFlight) {
+        const expected = grants.granted - grants.removed + settled.net - inFlight.staked;
+        return { drift: balance - expected, reconciled: balance === expected };
+      }
+
+      admin.get('/circulation', async () => {
+        const credits = q.floorCredits.get();
+        const grants = q.floorGrants.get();
+        const settled = withReturn(q.floorTotals.get());
+        const in_flight = q.floorInFlight.get();
+        return {
+          balance: credits.balance,
+          users: credits.users,
+          players: credits.players,
+          ...grants,
+          in_flight,
+          ...reconcile(credits.balance, grants, settled, in_flight),
+          ...settled,
+          games: q.floorByGame.all().map((g) => ({ game: g.game, ...withReturn(g) })),
+        };
+      });
+
+      admin.get('/players/:id/analytics', { schema: { params: ID_PARAMS } }, async (req) => {
+        const player = selectPlayer.get(req.params.id);
+        if (!player) throw new AppError(404, 'err_not_found');
+        const grants = q.playerGrants.get(player.id);
+        const settled = withReturn(q.playerTotals.get(player.id));
+        const in_flight = q.playerInFlight.get(player.id);
+        const span = q.playerSpan.get(player.id);
+        return {
+          player: {
+            id: player.id,
+            username: player.username,
+            display_name: player.display_name,
+            balance: player.balance,
+            is_active: player.is_active,
+            created_at: player.created_at,
+          },
+          ...grants,
+          in_flight,
+          ...reconcile(player.balance, grants, settled, in_flight),
+          best_round: q.playerBest.get(player.id) || null,
+          first_round: span.first_round,
+          last_round: span.last_round,
+          ...settled,
+          games: q.playerByGame.all(player.id).map((g) => ({ game: g.game, ...withReturn(g) })),
+        };
+      });
 
       // ── settings ────────────────────────────────────────────────
       admin.get('/settings', async () => settingsView(db));

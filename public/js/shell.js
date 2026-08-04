@@ -84,6 +84,7 @@ function navItems() {
   if (state.me.role === 'admin') {
     return [
       ['/admin', 'nav_admin_players'],
+      ['/admin/analytics', 'nav_admin_analytics'],
       ['/admin/audit', 'nav_admin_audit'],
       ['/admin/settings', 'nav_admin_settings'],
       ['/', 'nav_lobby'],

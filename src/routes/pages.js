@@ -44,6 +44,7 @@ export function registerPageRoutes(app) {
 
   const adminPages = {
     '/admin': 'admin/index.html',
+    '/admin/analytics': 'admin/analytics.html',
     '/admin/audit': 'admin/audit.html',
     '/admin/settings': 'admin/settings.html',
   };

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-t="title_admin_analytics">ანალიტიკა — დეშბორდი</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site" id="app-header"></header>
+  <main class="container">
+    <div class="page-head">
+      <h1 data-t="adm_analytics_heading"></h1>
+    </div>
+
+    <section class="panel">
+      <h2 data-t="adm_circ_heading"></h2>
+      <p class="muted" data-t="adm_circ_hint"></p>
+      <div class="stat-grid" id="circ-stats"></div>
+      <p id="circ-reconciled" class="recon"></p>
+    </section>
+
+    <section class="panel table-panel">
+      <h2 data-t="adm_by_game"></h2>
+      <table class="data">
+        <thead>
+          <tr>
+            <th data-t="adm_col_game"></th>
+            <th class="num" data-t="adm_col_rounds"></th>
+            <th class="num" data-t="adm_col_wagered"></th>
+            <th class="num" data-t="adm_col_paid"></th>
+            <th class="num" data-t="adm_col_net"></th>
+            <th class="num" data-t="adm_col_rtp"></th>
+          </tr>
+        </thead>
+        <tbody id="floor-games"></tbody>
+      </table>
+      <p id="floor-empty" class="muted" data-t="adm_no_rounds" hidden></p>
+      <p class="muted hint" data-t="adm_rtp_note"></p>
+    </section>
+
+    <section class="panel">
+      <h2 data-t="adm_player_heading"></h2>
+      <div class="form-row">
+        <label for="player-pick" data-t="adm_pick_player"></label>
+        <select id="player-pick"></select>
+      </div>
+      <div id="player-report" hidden>
+        <div class="stat-grid" id="player-stats"></div>
+        <p id="player-reconciled" class="recon"></p>
+        <p id="player-best" class="muted"></p>
+        <table class="data">
+          <thead>
+            <tr>
+              <th data-t="adm_col_game"></th>
+              <th class="num" data-t="adm_col_rounds"></th>
+              <th class="num" data-t="adm_col_wagered"></th>
+              <th class="num" data-t="adm_col_paid"></th>
+              <th class="num" data-t="adm_col_net"></th>
+              <th class="num" data-t="adm_col_rtp"></th>
+            </tr>
+          </thead>
+          <tbody id="player-games"></tbody>
+        </table>
+        <p id="player-empty" class="muted" data-t="adm_no_rounds" hidden></p>
+      </div>
+      <p id="player-none" class="muted" data-t="adm_no_players" hidden></p>
+    </section>
+  </main>
+  <footer class="site" id="app-footer"></footer>
+  <div id="toast-root"></div>
+  <script type="module" src="/js/pages/admin-analytics.js"></script>
+</body>
+</html>
