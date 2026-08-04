@@ -245,7 +245,17 @@ if (ctx) {
             attrs: { src: artFor(machine.symbols[index]), alt: '', draggable: 'false' },
           });
           const face = el('span', { cls: 'gface' }, [img]);
-          const cell = el('div', { cls: 'gcell', attrs: { style: `grid-area:${r + 1}/${c + 1}` } }, [face]);
+          const cell = el('div', { cls: 'gcell' }, [face]);
+          // Placed through the CSSOM, not a style="" attribute. The site
+          // ships style-src 'self' with no 'unsafe-inline', which blocks
+          // style attributes outright — and this grid is filled column by
+          // column, so with the placement dropped the browser auto-flowed
+          // the cells row by row and the whole picture came out
+          // transposed: the symbol drawn at a position was not the symbol
+          // the server had rolled there, and a payline traced cells that
+          // visibly held something else. A property assignment is not
+          // covered by the directive and cannot be silently ignored.
+          cell.style.gridArea = `${r + 1}/${c + 1}`;
           wrap.append(cell);
           column.push({ face, img });
         }
