@@ -367,6 +367,17 @@ if (ctx) {
     // covers. Colours are a function of the line index so two lines that
     // overlap stay tellable apart, and the stroke is non-scaling so the
     // stretched viewBox cannot make it thicker one way than the other.
+    // Coloured by the order the lines are drawn in, not by line index.
+    // Indexing by line looked stable, but lines that land together tend
+    // to be close-numbered, and 47 degrees per index wraps: line 9 and
+    // line 17 on the twenty-line cabinet came out 16 degrees apart —
+    // the same orange twice, over the same reels. Only the lines on
+    // screen at once ever need telling apart, and the golden angle
+    // spreads however many of them there are about as evenly as they
+    // can be spread. The win list numbers itself the same way, so a row
+    // there and a stroke here carry one colour between them.
+    const hueFor = (order) => `hsl(${(order * 137.508) % 360} 92% 64%)`;
+
     function drawWinLines(wins) {
       const overlay = $('line-overlay');
       overlay.textContent = '';
@@ -378,7 +389,7 @@ if (ctx) {
         const poly = document.createElementNS(SVG_NS, 'polyline');
         poly.setAttribute('points', path);
         poly.setAttribute('fill', 'none');
-        poly.setAttribute('stroke', `hsl(${(w.line * 47) % 360} 92% 64%)`);
+        poly.setAttribute('stroke', hueFor(order));
         poly.setAttribute('stroke-width', '3');
         poly.setAttribute('stroke-linecap', 'round');
         poly.setAttribute('stroke-linejoin', 'round');
@@ -403,12 +414,12 @@ if (ctx) {
       list.textContent = '';
       const lineBet = stake / spec.lines.length;
       const shown = wins.slice(0, 5);
-      for (const w of shown) {
+      shown.forEach((w, order) => {
         // Same hue as the stroke over the reels, so a row here and a line
         // up there are matchable at a glance. Set through the CSSOM for
         // the same reason as the grid cells: style attributes are blocked.
         const label = el('span', { cls: 'wl-line', text: `${t('slot_win_line')} ${w.line + 1}` });
-        label.style.color = `hsl(${(w.line * 47) % 360} 92% 64%)`;
+        label.style.color = hueFor(order);
         list.append(
           el('li', {}, [
             label,
@@ -417,7 +428,7 @@ if (ctx) {
             el('span', { cls: 'wl-pay num', text: px(w.pay * scale * lineBet) }),
           ]),
         );
-      }
+      });
       if (wins.length > shown.length) {
         list.append(el('li', { cls: 'wl-more num', text: `+${wins.length - shown.length}` }));
       }
