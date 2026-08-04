@@ -92,6 +92,7 @@ function emptySeat(index) {
     done: false,
     doubled: false,
     result: null,
+    net: 0,
     roundRowId: null,
     lastSeen: 0,
   };
@@ -212,6 +213,7 @@ export function createBlackjackTable(db) {
     seat.done = false;
     seat.doubled = false;
     seat.result = null;
+    seat.net = 0;
     seat.roundRowId = null;
     seat.baseBet = 0;
   }
@@ -417,6 +419,10 @@ export function createBlackjackTable(db) {
       if (seat.kind === 'player' && seat.roundRowId) {
         const settled = settleOutcome(seat.hand, dealer, { bet: seat.baseBet, doubled: seat.doubled });
         seat.result = settled.result;
+        // what the round moved, ready to read: the table already knows
+        // it, and the alternative is the page re-deriving 3:2 rounding
+        // and the doubled stake from a bet and a result string.
+        seat.net = settled.payout - (seat.doubled ? seat.baseBet * 2 : seat.baseBet);
         finalize(seat, dealer, settled);
       } else if (seat.kind === 'bot' && seat.hand.length) {
         seat.result = botResult(seat.hand, dealer);
@@ -449,6 +455,8 @@ export function createBlackjackTable(db) {
       total: seat.hand.length ? handTotal(seat.hand).total : 0,
       done: seat.done,
       result: state.phase === 'payout' ? seat.result : null,
+      // your own money only — what the neighbours won is theirs to know
+      net: you && state.phase === 'payout' ? seat.net : 0,
       active: seat.index === state.activeSeat,
     };
   }

@@ -1,6 +1,16 @@
 /* Live blackjack table — original CSS/SVG art, no external assets.
    Loaded only by blackjack.html on top of the shared style.css. */
 
+/* The table speaks in a serif. Blackjack is the oldest thing in the
+   building and a card room does not sound like an interface, so the
+   page overrides --font-display for the felt: the dealer's plate, the
+   arc lettering and the result in the centre. Body copy and the dock
+   stay on the interface face — this is a voice, not a costume. Georgian
+   only; the stack falls through to Casino Sans for Latin and digits. */
+body.bj-page {
+  --font-display: 'Noto Serif Georgian', 'Casino Sans', 'Segoe UI', serif;
+}
+
 .bj-stage {
   --felt: #0f6b46;
   --felt-dark: #0a4c31;
@@ -84,21 +94,6 @@ body.bj-page .bj-stage {
   padding: 20px;
 }
 
-.bj-arc-text {
-  position: absolute;
-  top: 40%;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: rgba(231, 195, 90, 0.7);
-  font-weight: 700;
-  font-size: clamp(11px, 1.7vw, 15px);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  pointer-events: none;
-}
-.bj-arc-text .rule { display: block; font-size: 0.8em; opacity: 0.7; margin-top: 3px; }
-
 /* ── dealer zone ──────────────────────────────────────────────── */
 .bj-dealer-zone {
   position: absolute;
@@ -120,6 +115,7 @@ body.bj-page .bj-stage {
   border-radius: 999px;
   padding: 4px 14px 4px 5px;
   color: #fff;
+  font-family: var(--font-display);
   font-size: 13px;
 }
 .bj-dealer-avatar {
@@ -243,6 +239,50 @@ body.bj-page .bj-stage {
 @keyframes tick-pulse { 50% { transform: scale(1.2); } }
 .bj-status.hidden { display: none; }
 
+/* The result reads as the one thing on the felt worth reading: the
+   same pill, grown, tinted to the outcome and carrying the amount. It
+   is a statement, not a flourish — it swells once as it arrives and
+   then holds still. */
+.bj-status.result {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  padding: 9px 22px;
+  animation: result-in 0.28s cubic-bezier(0.22, 1.2, 0.4, 1);
+}
+@keyframes result-in {
+  from { transform: translate(-50%, -50%) scale(0.86); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.bj-status .net {
+  font-weight: 800;
+  font-size: 0.95em;
+  opacity: 0.95;
+}
+.bj-status .net:empty { display: none; }
+.bj-status.win, .bj-status.bj {
+  color: var(--win);
+  border-color: rgba(61, 220, 132, 0.5);
+  background: rgba(6, 34, 20, 0.72);
+  box-shadow: 0 0 26px rgba(61, 220, 132, 0.18);
+}
+.bj-status.bj {
+  color: var(--gold);
+  border-color: rgba(231, 195, 90, 0.6);
+  box-shadow: 0 0 30px rgba(231, 195, 90, 0.22);
+}
+.bj-status.lose {
+  color: var(--lose);
+  border-color: rgba(255, 77, 109, 0.45);
+  background: rgba(38, 8, 15, 0.72);
+}
+.bj-status.push {
+  color: #dfe3f2;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(14, 16, 26, 0.72);
+}
+
 .bj-hint {
   width: 100%;
   text-align: center;
@@ -351,17 +391,31 @@ body.bj-page .bj-stage {
   font-weight: 700;
   color: var(--gold);
 }
-.bj-seat-badge {
-  font-size: 10.5px;
-  font-weight: 800;
-  padding: 1px 8px;
-  border-radius: 999px;
-  min-height: 16px;
+/* ── the burn ─────────────────────────────────────────────────────
+   How a hand ended is written on the hand. Over 21 and it burns: the
+   cards go dark and cold, sink a little, and settle at a slight angle,
+   the way a hand does when it is pushed away. That happens the moment
+   the total crosses, not at the showdown — the player can already see
+   the card that did it. Losing at the showdown dims a shade less: it
+   is the same defeat but the hand did nothing wrong. Winning lifts.
+
+   This replaced a row of result badges stamped over every seat, which
+   wrote the same "დილერის მოგებაა" six times across the table. The
+   words go once now, in the centre (.bj-status.result). */
+.bj-hand, .bj-dealer-hand, .bj-seat-total, .bj-dealer-total {
+  transition: filter 0.45s ease, transform 0.45s ease, color 0.3s ease;
 }
-.bj-seat-badge.win { background: rgba(61, 220, 132, 0.2); color: var(--win); }
-.bj-seat-badge.lose { background: rgba(255, 77, 109, 0.18); color: var(--lose); }
-.bj-seat-badge.push { background: rgba(255, 255, 255, 0.14); color: #dfe3f2; }
-.bj-seat-badge.bj { background: rgba(231, 195, 90, 0.25); color: var(--gold); }
+.bj-seat.bust .bj-hand, .bj-dealer-hand.bust {
+  filter: brightness(0.4) saturate(0.3) contrast(1.1);
+  transform: translateY(9px) rotate(1.2deg);
+}
+.bj-seat.lost .bj-hand {
+  filter: brightness(0.6) saturate(0.55);
+  transform: translateY(5px);
+}
+.bj-seat.won .bj-hand { transform: translateY(-4px); }
+.bj-seat.bust .bj-seat-total, .bj-dealer-total.bust { color: var(--lose); }
+.bj-seat.won .bj-seat-total { color: var(--win); }
 
 /* ── playing cards ────────────────────────────────────────────── */
 .pcard {

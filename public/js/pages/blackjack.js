@@ -16,8 +16,8 @@ import { cardEl } from '../cards.js';
 const CHIP_BASE = [1, 5, 25, 100, 500, 1000];
 const POLL_MS = 700;
 const PHASE_LABEL = { betting: 'bj_place_bets', acting: 'bj_dealing', dealer: 'bj_dealer_turn', payout: 'bj_next_round' };
-const RESULT_KEY = { blackjack: 'bj_blackjack', win: 'bj_win', lose: 'bj_lose', push: 'bj_push' };
-const RESULT_CLASS = { blackjack: 'bj', win: 'win', lose: 'lose', push: 'push' };
+const RESULT_KEY = { blackjack: 'bj_blackjack', win: 'bj_win', lose: 'bj_lose', push: 'bj_push', bust: 'bj_bust' };
+const RESULT_CLASS = { blackjack: 'bj', win: 'win', lose: 'lose', push: 'push', bust: 'lose' };
 
 const ctx = await initShell({ requireAuth: true });
 if (ctx) {
@@ -43,7 +43,6 @@ if (ctx) {
   const seatView = [];
   for (let i = 0; i < 7; i++) {
     const hand = el('div', { cls: 'bj-hand' });
-    const badge = el('div', { cls: 'bj-seat-badge' });
     const stack = el('div', { cls: 'bj-chip-stack' });
     const betAmount = el('div', { cls: 'bj-bet-amount' });
     const betspot = el('div', { cls: 'bj-betspot' }, [stack]);
@@ -51,11 +50,11 @@ if (ctx) {
     const nameEl = el('span', { cls: 'bj-seat-name' });
     const totalEl = el('span', { cls: 'bj-seat-total' });
     const root = el('div', { cls: 'bj-seat empty', attrs: { 'data-index': String(i) } }, [
-      hand, badge, betspot, betAmount,
+      hand, betspot, betAmount,
       el('div', { cls: 'bj-nameplate' }, [avatar, nameEl, totalEl]),
     ]);
     seatsWrap.append(root);
-    seatView.push({ root, hand, badge, stack, betAmount, avatar, nameEl, totalEl, count: 0 });
+    seatView.push({ root, hand, stack, betAmount, avatar, nameEl, totalEl, count: 0 });
   }
   const dealerHandEl = $('dealer-hand');
 
@@ -209,16 +208,43 @@ if (ctx) {
     }
     return null;
   }
+  // Your own outcome, or '' when there is nothing to say yet. A bust
+  // shows the instant the hand goes over — waiting for the payout to
+  // announce it would be telling the player something they can already
+  // see — and the settled result replaces it at the showdown.
+  function myResult(snap) {
+    const mine = snap.your_seat >= 0 ? snap.seats[snap.your_seat] : null;
+    if (!mine || !mine.hand.length) return '';
+    if (snap.phase === 'payout' && mine.result) return mine.result;
+    return mine.total > 21 ? 'bust' : '';
+  }
+
   function setStatus(snap) {
     const remaining = remainingSeconds(snap);
-    let key = PHASE_LABEL[snap.phase] || '';
     const myTurn = snap.phase === 'acting' && snap.active_seat === snap.your_seat && snap.your_seat >= 0;
-    if (myTurn) key = 'bj_your_turn';
+
+    // The centre of the felt is where the player is already looking, so
+    // that is where their own result goes — and only theirs.
+    const result = myResult(snap);
+    let key = PHASE_LABEL[snap.phase] || '';
+    if (result) key = RESULT_KEY[result];
+    else if (myTurn) key = 'bj_your_turn';
     $('status-text').textContent = t(key);
+
+    // "you win" is worth more as a number. net is the table's own
+    // figure, signed, and 0 on a push — which prints nothing.
+    const net = result === '' || snap.phase !== 'payout' ? 0 : snap.seats[snap.your_seat].net;
+    $('status-net').textContent = net > 0 ? `+${fmt(net)}` : net < 0 ? `−${fmt(-net)}` : '';
+
     $('status-count').textContent = remaining === null ? '' : String(remaining);
     const urgent = remaining !== null && remaining <= 3;
-    $('status').classList.toggle('urgent', urgent);
-    $('status').classList.toggle('has-count', remaining !== null);
+    const status = $('status');
+    status.classList.toggle('urgent', urgent);
+    status.classList.toggle('has-count', remaining !== null);
+    status.classList.toggle('result', !!result);
+    for (const cls of ['win', 'lose', 'push', 'bj']) {
+      status.classList.toggle(cls, RESULT_CLASS[result] === cls);
+    }
 
     // ticking sound as a betting window or your turn runs out
     const timed = snap.phase === 'betting' || myTurn;
@@ -231,6 +257,10 @@ if (ctx) {
   function renderDealer(snap) {
     const revealed = snap.dealer.revealed;
     const sig = `${revealed}:${snap.dealer.cards.join(',')}`;
+    // the house burns on the same terms as the seats
+    const bust = revealed && snap.dealer.total > 21;
+    dealerHandEl.classList.toggle('bust', bust);
+    $('dealer-total').classList.toggle('bust', bust);
     if (sig === dealerSig) return;
     const growing = snap.dealer.cards.length > (lastSnap ? lastSnap.dealer.cards.length : 0);
     dealerHandEl.textContent = '';
@@ -261,13 +291,19 @@ if (ctx) {
     for (let i = view.count; i < seat.hand.length; i++) { view.hand.append(cardEl(seat.hand[i])); sfx.deal(); }
     view.count = seat.hand.length;
     view.totalEl.textContent = seat.hand.length ? String(seat.total) : '';
-    if (seat.result) {
-      view.badge.className = `bj-seat-badge ${RESULT_CLASS[seat.result]}`;
-      view.badge.textContent = t(RESULT_KEY[seat.result]);
-    } else {
-      view.badge.className = 'bj-seat-badge';
-      view.badge.textContent = '';
-    }
+
+    // The round used to end with a result badge stamped over every
+    // seat, so "დილერის მოგებაა" was written across the whole table at
+    // once and the player still had to find their own chair to read
+    // their own outcome. The hands say it instead: one that went over
+    // 21 burns — it dims and sinks where it lies, the moment it
+    // happens, and stays that way through the showdown. Losing at the
+    // showdown dims a shade less; nothing there was the hand's fault.
+    // The words go once, in the centre — see setStatus.
+    const bust = seat.hand.length > 0 && seat.total > 21;
+    view.root.classList.toggle('bust', bust);
+    view.root.classList.toggle('lost', !bust && seat.result === 'lose');
+    view.root.classList.toggle('won', seat.result === 'win' || seat.result === 'blackjack');
   }
 
   function paintDock(snap) {
