@@ -72,6 +72,7 @@ test('player sessions get 403 on every admin route', async () => {
     ['POST', '/api/admin/players/x/reset-password'],
     ['POST', '/api/admin/players/x/active', { is_active: false }],
     ['POST', '/api/admin/settings', { rtp: 0.95 }],
+    ['POST', '/api/admin/reset', { confirm: 'RESET' }],
   ];
   for (const [method, url, payload] of routes) {
     const res = await app.inject({ method, url, payload, cookies });

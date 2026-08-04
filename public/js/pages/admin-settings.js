@@ -68,4 +68,45 @@ if (ctx) {
       toastError(err);
     }
   });
+
+  // ── danger zone ───────────────────────────────────────────────────
+  // The word the server insists on (src/routes/admin.js). This copy
+  // cannot drift silently: send anything else and the request is
+  // refused, so a mismatch shows up the first time the button is used
+  // rather than wiping a floor on the strength of the wrong token.
+  const RESET_TOKEN = 'RESET';
+
+  const resetDialog = $('reset-dialog');
+  const resetInput = $('reset-token');
+  const resetConfirm = $('reset-confirm');
+  $('reset-word').textContent = RESET_TOKEN;
+
+  for (const btn of document.querySelectorAll('[data-close]')) {
+    btn.addEventListener('click', () => btn.closest('dialog').close());
+  }
+
+  // Typing the word is the whole guard, so the button stays dead until
+  // it matches: the second click is never in the same place as the
+  // first, and no amount of pressing Enter arrives here on its own.
+  resetInput.addEventListener('input', () => {
+    resetConfirm.disabled = resetInput.value.trim() !== RESET_TOKEN;
+  });
+
+  $('reset-open').addEventListener('click', () => {
+    resetInput.value = '';
+    resetConfirm.disabled = true;
+    resetDialog.showModal();
+  });
+
+  resetConfirm.addEventListener('click', async () => {
+    resetConfirm.disabled = true;
+    try {
+      await api('/api/admin/reset', { method: 'POST', body: { confirm: RESET_TOKEN } });
+      resetDialog.close();
+      toast('adm_reset_done', 'ok');
+    } catch (err) {
+      resetConfirm.disabled = false;
+      toastError(err);
+    }
+  });
 }

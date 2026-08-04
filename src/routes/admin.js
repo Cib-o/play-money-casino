@@ -5,6 +5,13 @@ import { AppError } from '../errors.js';
 
 const PAGE_SIZE = 20;
 
+// Typed back by the operator and sent up with the request, so a floor
+// cannot be wiped by a bare POST — a mistyped command line, a replayed
+// request, a bookmarked URL. It is deliberately not a translated word:
+// the same three letters are asked for in both languages, so nothing
+// depends on which keyboard layout the admin happens to be holding.
+export const RESET_TOKEN = 'RESET';
+
 const ID_PARAMS = {
   type: 'object',
   additionalProperties: false,
@@ -510,6 +517,57 @@ export function registerAdminRoutes(app) {
             }
           }
           return settingsView(db);
+        },
+      );
+
+      // ── reset the floor ─────────────────────────────────────────
+      // Everything play has produced goes; the people stay. An account
+      // keeps its username, password, display name and language, and
+      // loses its balance, its history and its seed.
+      //
+      // Balances go to zero rather than back to the starting stake, so
+      // what is left is exactly what a floor holds before anyone has
+      // been given anything, and the circulation check closes on its
+      // own: nothing granted, nothing played, nothing on hand. Putting
+      // the players back in funds is then an ordinary admin credit,
+      // recorded like any other and visible in the audit log from its
+      // very first line, instead of a starting balance the reset had
+      // to invent a grant for in order to stay reconciled.
+      //
+      // The settings are not touched. RTP, the table limits and the
+      // site name are how the operator has configured the house, not
+      // something play produced, and an operator clearing the floor is
+      // not asking to have their limits reverted underneath them.
+      const wipeFloor = db.transaction(() => ({
+        rounds: db.prepare('DELETE FROM rounds').run().changes,
+        adjustments: db.prepare('DELETE FROM balance_adjustments').run().changes,
+        hands: db.prepare('DELETE FROM blackjack_states').run().changes,
+        seeds: db.prepare('DELETE FROM seeds').run().changes,
+        // Counted with a WHERE, so the number reported is how many
+        // accounts actually held credits rather than how many exist.
+        balances: db.prepare('UPDATE users SET balance = 0 WHERE balance <> 0').run().changes,
+      }));
+
+      admin.post(
+        '/reset',
+        {
+          schema: {
+            body: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['confirm'],
+              properties: { confirm: { const: RESET_TOKEN } },
+            },
+          },
+        },
+        async () => {
+          // These two run in one tick with no await between them, so no
+          // timer can fire in the gap: there is no moment at which the
+          // shared table is still holding hands staked against rounds
+          // that have already been deleted.
+          const cleared = wipeFloor();
+          if (app.blackjackTable) app.blackjackTable.reset();
+          return { cleared };
         },
       );
     },

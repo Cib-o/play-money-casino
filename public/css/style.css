@@ -814,6 +814,38 @@ details[open] summary { margin-bottom: 8px; }
 #create-panel { margin-bottom: 18px; }
 #balance-dialog { width: min(560px, 94vw); }
 
+/* The danger zone reads as a different kind of place than the form
+   above it: separated by a gap rather than a rule, and outlined in the
+   losing colour so it is never mistaken for one more settings card. */
+.danger-zone {
+  margin-top: 26px;
+  border-color: rgba(255, 77, 109, 0.4);
+}
+.danger-zone h2 { margin: 0 0 14px; font-size: 16px; color: var(--lose); }
+.danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.danger-row .hint { max-width: 52ch; }
+/* Wide enough that the word cannot be typed past the edge of the box,
+   and monospaced so a typo is visible against the word beside it. */
+#reset-dialog { width: min(560px, 94vw); }
+#reset-dialog code {
+  background: var(--bg-raise);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 2px 7px;
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+}
+#reset-token { font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace; }
+#reset-confirm { margin-top: 4px; }
+#reset-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* Analytics figures. Auto-fit rather than a fixed column count so the
    same grid reads on a phone and on a wide desktop without a breakpoint
    for every arrangement in between. */

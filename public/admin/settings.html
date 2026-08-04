@@ -59,7 +59,36 @@
         </div>
       </form>
     </section>
+
+    <!-- Its own panel, well below the save button, so nothing in here
+         is ever a neighbour of an ordinary edit. -->
+    <section class="panel danger-zone">
+      <h2 data-t="adm_danger_heading"></h2>
+      <div class="danger-row">
+        <div>
+          <strong data-t="adm_reset_title"></strong>
+          <p class="muted hint" data-t="adm_reset_hint"></p>
+        </div>
+        <button class="btn danger" id="reset-open" type="button" data-t="adm_reset_btn"></button>
+      </div>
+    </section>
   </main>
+
+  <dialog id="reset-dialog">
+    <div class="dialog-head">
+      <h2 data-t="adm_reset_title"></h2>
+      <button class="btn ghost small" data-t="close" data-close></button>
+    </div>
+    <p class="lose-text" data-t="adm_reset_wipes"></p>
+    <p class="muted" data-t="adm_reset_keeps"></p>
+    <p class="muted" data-t="adm_reset_refund"></p>
+    <div class="form-row">
+      <label for="reset-token"><span data-t="adm_reset_type"></span> <code id="reset-word"></code></label>
+      <input id="reset-token" type="text" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn danger" id="reset-confirm" type="button" data-t="adm_reset_confirm_btn" disabled></button>
+  </dialog>
+
   <footer class="site" id="app-footer"></footer>
   <div id="toast-root"></div>
   <script type="module" src="/js/pages/admin-settings.js"></script>

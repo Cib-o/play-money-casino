@@ -594,6 +594,41 @@ export function createBlackjackTable(db) {
     }
   }
 
+  // Called when an admin resets the floor. The rounds these seats are
+  // playing into have just been deleted, so the hands in flight are
+  // abandoned rather than settled — paying one out would put credits
+  // into a balance against a row that no longer exists, and the
+  // dashboard would then be short by exactly that much with nothing to
+  // point at. Emptying the seats is what abandons them: a seat with no
+  // roundRowId and no stake has nothing left to settle.
+  //
+  // Cancelling the timers is belt and braces. The restart below bumps
+  // the epoch, and a stopped table fails the `running` check, so the
+  // round's pending phases would fall away on their own either way —
+  // but that is a property of the restart rather than of the reset, and
+  // this way the guarantee holds whether or not the table deals itself
+  // back in.
+  function reset() {
+    clearTimers();
+    for (const seat of state.seats) Object.assign(seat, emptySeat(seat.index));
+    state.dealer = { cards: [], revealed: false };
+    state.activeSeat = -1;
+    state.turnEndsAt = 0;
+    state.nonce = 0;
+    state.revealed = false;
+    state.version++;
+    // A running table deals itself back in immediately; a stopped one
+    // is left exactly as a freshly built table looks, waiting.
+    if (running) {
+      startBetting();
+    } else {
+      state.serverSeed = '';
+      state.serverSeedHash = '';
+      state.phase = 'betting';
+      state.phaseEndsAt = Date.now() + BETTING_MS;
+    }
+  }
+
   function start() {
     if (running) return;
     running = true;
@@ -604,5 +639,5 @@ export function createBlackjackTable(db) {
     clearTimers();
   }
 
-  return { snapshot, sit, bet, leave, action, removeUser, start, stop, SEAT_COUNT };
+  return { snapshot, sit, bet, leave, action, removeUser, reset, start, stop, SEAT_COUNT };
 }
