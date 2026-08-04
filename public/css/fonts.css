@@ -1,0 +1,82 @@
+/* Self-hosted type. Nothing here talks to a third party: the site used
+   to pull Noto Sans Georgian and IBM Plex Mono from fonts.googleapis.com
+   on every page load, which put a Google request in front of every
+   screen and left the whole interface waiting on someone else's CDN.
+
+   Every face below is SIL Open Font License 1.1 and lives in
+   public/assets/fonts, subset to Latin + Georgian + the punctuation and
+   currency marks this site actually types — 786K of FiraGO comes down
+   to 32K once Arabic, Devanagari, Hebrew, Thai, Cyrillic and Greek are
+   gone. Provenance, designers and the renaming the licence required are
+   recorded in public/assets/fonts/CREDITS.md; read that before touching
+   anything in here. */
+
+/* Casino Sans — the interface face. A subset of FiraGO, whose Georgian
+   was drawn by Akaki Razmadze and Anja Meiners: warmer and narrower
+   than Noto, with more movement in the letterforms. */
+@font-face {
+  font-family: 'Casino Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/casino-sans-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Casino Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/assets/fonts/casino-sans-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Casino Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/fonts/casino-sans-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Casino Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/assets/fonts/casino-sans-800.woff2') format('woff2');
+}
+
+/* Noto Serif Georgian — the display face, used where a game wants a
+   voice of its own. Blackjack takes it: a serif reads as a card room in
+   a way a UI sans cannot. Georgian only, so the stack below falls back
+   to Casino Sans for Latin and digits. */
+@font-face {
+  font-family: 'Noto Serif Georgian';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/assets/fonts/noto-serif-georgian-600.woff2') format('woff2');
+  unicode-range: U+10A0-10FF, U+1C90-1CBF, U+2D00-2D2F;
+}
+@font-face {
+  font-family: 'Noto Serif Georgian';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/assets/fonts/noto-serif-georgian-800.woff2') format('woff2');
+  unicode-range: U+10A0-10FF, U+1C90-1CBF, U+2D00-2D2F;
+}
+
+/* Casino Mono — every number on the site. A subset of IBM Plex Mono,
+   kept monospaced so a balance does not jitter as its digits change. */
+@font-face {
+  font-family: 'Casino Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/assets/fonts/casino-mono-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Casino Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/fonts/casino-mono-700.woff2') format('woff2');
+}

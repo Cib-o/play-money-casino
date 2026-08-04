@@ -14,8 +14,13 @@
   --lose: #ff4d6d;
   --radius: 14px;
   --radius-s: 9px;
-  --font-text: 'Noto Sans Georgian', 'Segoe UI', system-ui, sans-serif;
-  --font-num: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Faces are declared in css/fonts.css and served from this repo — see
+     public/assets/fonts/CREDITS.md. --font-display is the token a game
+     overrides to give itself a voice of its own; blackjack takes a
+     serif, everything else stays on the interface face. */
+  --font-text: 'Casino Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Casino Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-num: 'Casino Mono', ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }

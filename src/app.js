@@ -45,16 +45,18 @@ export function buildApp({ db, config, logger = false }) {
   app.decorateRequest('user', null);
 
   // Baseline security headers. The frontend contains no inline scripts
-  // or styles, so the CSP can stay strict.
+  // or styles and now serves its own fonts, so every directive is
+  // 'self': there is no third-party origin left to allow. The two that
+  // used to be here — fonts.googleapis.com for the stylesheet and
+  // fonts.gstatic.com for the files — went out with the CDN.
   app.addHook('onRequest', async (req, reply) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
     reply.header('X-Frame-Options', 'DENY');
     reply.header(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; " +
-        "style-src 'self' https://fonts.googleapis.com; " +
-        "font-src https://fonts.gstatic.com; img-src 'self' data:; " +
+      "default-src 'self'; script-src 'self'; style-src 'self'; " +
+        "font-src 'self'; img-src 'self' data:; " +
         "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; " +
         "form-action 'self'",
     );
