@@ -97,3 +97,38 @@ test('every highlighted scatter cell holds a scatter', () => {
     }
   }
 });
+
+// …and the page must light them only when they paid. `scatterCells` is
+// every scatter on the grid, not every scatter that won something, and
+// the gap between those two is not a rounding error: a scatter lands
+// without paying on roughly half of all spins, and pays on one or two in
+// a hundred. Highlighting the whole set — which is what the page used to
+// do — put a glow on a symbol that returned nothing, on every other
+// spin. That is a losing spin dressed up as a near miss, and this floor
+// does not do near misses; a win is a number and a loss gets no
+// decoration. The numbers below are what makes the distinction matter,
+// so they are pinned here rather than left as a remark in a comment.
+test('scatters land without paying far more often than they pay', () => {
+  for (const id of LINE_MACHINE_IDS) {
+    const m = lineMachine(id);
+    let landedNoPay = 0;
+    let paid = 0;
+    const spins = 2000;
+    for (let nonce = 0; nonce < spins; nonce++) {
+      const round = spinLines({
+        serverSeed: SEED, clientSeed: 'nearmiss', nonce, rtp: 0.96, bet: 100, machine: id,
+      });
+      const { scatterCells, scatterPay } = lineEvaluate(lineGrid(round.stops, m), m);
+      if (scatterPay > 0) paid++;
+      else if (scatterCells.length > 0) landedNoPay++;
+    }
+    assert.ok(
+      landedNoPay > spins * 0.3,
+      `${id}: only ${landedNoPay}/${spins} spins show a scatter that pays nothing`,
+    );
+    assert.ok(
+      landedNoPay > paid * 10,
+      `${id}: ${landedNoPay} non-paying vs ${paid} paying — the two are close enough that highlighting both would not mislead`,
+    );
+  }
+});

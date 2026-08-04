@@ -298,6 +298,12 @@ if (ctx) {
       }
       spec = lineMachine(machine.id);
       if (kit) kit.stop();
+      // A spin still in flight leaves the tumble running on a timer. It
+      // writes into whatever `gcells` holds, so left alone it would go on
+      // to scribble the last cabinet's sprites across this one's fresh
+      // reels and abandon them there — the request that started it is no
+      // longer going to paint anything.
+      stopShuffle();
       kit = kitFor(machine);
       results.length = 0;
 
@@ -321,6 +327,7 @@ if (ctx) {
 
     function showFloor() {
       if (kit) kit.stop();
+      stopShuffle();
       machine = null;
       spec = null;
       $('cabinet').hidden = true;
@@ -409,10 +416,10 @@ if (ctx) {
     // credit, that showed "54.92×" over a line and "2.1×" for the spin
     // and left no way to get from one to the other. Credits are the unit
     // the player is actually paid in, and they add up to the headline.
-    function listWins(wins, scatterCells, scatterPay, scale, stake) {
+    function listWins(wins, scatterCells, scatterPay, scale, stake, atSpec) {
       const list = $('win-list');
       list.textContent = '';
-      const lineBet = stake / spec.lines.length;
+      const lineBet = stake / atSpec.lines.length;
       const shown = wins.slice(0, 5);
       shown.forEach((w, order) => {
         // Same hue as the stroke over the reels, so a row here and a line
@@ -445,42 +452,60 @@ if (ctx) {
       }
     }
 
-    async function landLines(outcome, art, stake) {
+    // `at` is the cabinet that spun, and `atSpec` its strips. Both are
+    // taken as arguments rather than read off the module, because the
+    // reels land one column at a time and a player can walk to another
+    // cabinet in the middle of that — at which point the globals are
+    // already describing a different machine.
+    async function landLines(outcome, art, stake, at, atSpec) {
       // Rebuilt from the committed stops with the verifier's own module.
       // The round carries the RTP it was resolved at, so an admin who
       // changes the setting mid-session cannot make this page price a
       // round against a number that was not in force when it was played.
-      const grid = lineGrid(outcome.stops, spec);
-      const evalv = lineEvaluate(grid, spec);
-      const scale = linePayScale(outcome.rtp ?? config.rtp, machine.id);
+      const grid = lineGrid(outcome.stops, atSpec);
+      const evalv = lineEvaluate(grid, atSpec);
+      const scale = linePayScale(outcome.rtp ?? config.rtp, at.id);
 
-      for (let c = 0; c < machine.cols; c++) {
-        for (let r = 0; r < machine.rows; r++) {
+      for (let c = 0; c < at.cols; c++) {
+        for (let r = 0; r < at.rows; r++) {
           const { face, img } = gcells[c][r];
           face.classList.remove('spinning');
-          img.src = artFor(machine.symbols[grid[c][r]]);
+          img.src = artFor(at.symbols[grid[c][r]]);
           face.classList.add('landed');
         }
-        kit.reel(c, machine.cols);
-        if (c < machine.cols - 1) await sleep(art.gap);
+        kit.reel(c, at.cols);
+        if (c < at.cols - 1) {
+          await sleep(art.gap);
+          // Gone. `gcells` is whatever cabinet is open now, so finishing
+          // here would paint one machine's outcome onto another's reels.
+          if (machine !== at) return;
+        }
       }
 
       // If the grid this page derived ever disagreed with the multiplier
       // the server recorded, drawing wins on it would be drawing a lie.
       // The numbers the server committed to still stand; the highlights
       // are what get dropped.
-      const derived = (evalv.total / spec.lines.length) * scale;
+      const derived = (evalv.total / atSpec.lines.length) * scale;
       if (Math.abs(derived - outcome.mult) > 1e-9) return;
 
       const wins = [...evalv.wins].sort((a, b) => b.pay - a.pay);
       for (const w of wins) {
         for (let col = 0; col < w.run; col++) {
-          gcells[col][spec.lines[w.line][col]].face.classList.add('won');
+          gcells[col][atSpec.lines[w.line][col]].face.classList.add('won');
         }
       }
-      for (const [c, r] of evalv.scatterCells) gcells[c][r].face.classList.add('scattered');
+      // Only a scatter that actually paid is lit. One or two of them land
+      // on about half of every machine's spins and pay nothing at all —
+      // ringing those was decorating a loss to look like it came close,
+      // which is the one thing this floor will not do. It also simply
+      // wasn't true: the highlight means "this cell won something", and
+      // on those spins it didn't.
+      if (evalv.scatterPay > 0) {
+        for (const [c, r] of evalv.scatterCells) gcells[c][r].face.classList.add('scattered');
+      }
       drawWinLines(wins);
-      listWins(wins, evalv.scatterCells, evalv.scatterPay, scale, stake);
+      listWins(wins, evalv.scatterCells, evalv.scatterPay, scale, stake, atSpec);
     }
 
     async function spin() {
@@ -493,6 +518,7 @@ if (ctx) {
       const stake = bet.value;
       const art = look(machine);
       const at = machine;
+      const atSpec = spec;
       startShuffle();
       kit.press();
       kit.start();
@@ -507,13 +533,16 @@ if (ctx) {
         await sleep(Math.max(0, art.run - (Date.now() - started)));
         stopShuffle();
 
-        // The player can walk to another cabinet while the request is
-        // in flight. The round still happened and the balance still
-        // moved — but the reels standing there are not this one's, so
-        // nothing gets painted onto them.
+        // The player can walk to another cabinet while the request is in
+        // flight, and again while the reels are still landing — they land
+        // a column at a time. The round still happened and the balance
+        // still moved, but the grid standing there is not this one's, so
+        // nothing gets painted onto it. Both crossings are checked:
+        // `landLines` gives up mid-landing, and the readout is written
+        // only if the cabinet is still the one that spun.
+        const { outcome } = res.round;
+        if (machine === at) await landLines(outcome, art, stake, at, atSpec);
         if (machine === at) {
-          const { outcome } = res.round;
-          await landLines(outcome, art, stake);
           kit.stop();
 
           // How much came back, said plainly and in one place. The
