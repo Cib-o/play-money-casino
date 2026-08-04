@@ -4,9 +4,9 @@ import { randomUUID, createHash } from 'node:crypto';
 import { openDb, nowISO } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { buildApp } from '../src/app.js';
-import { MACHINES, MACHINE_IDS, DEFAULT_MACHINE } from '../src/games/slots.js';
+import { MACHINE_IDS } from '../src/games/slots.js';
 import { LINE_MACHINES } from '../src/games/slot-lines.js';
-import { FLOOR_IDS } from '../src/games/slot-floor.js';
+import { FLOOR_IDS, FLOOR_DEFAULT } from '../src/games/slot-floor.js';
 
 const SECRET = 'test-session-secret-0123456789abcdef0123456789';
 
@@ -245,32 +245,34 @@ test('slots: the floor is served from the registry and the machine is honoured',
   const list = await app.inject({ method: 'GET', url: '/api/game/slots/machines', cookies });
   assert.equal(list.statusCode, 200, list.body);
   const floor = JSON.parse(list.body);
-  assert.equal(floor.default, DEFAULT_MACHINE);
+  assert.equal(floor.default, FLOOR_DEFAULT);
   assert.equal(floor.rtp, 0.96);
   assert.deepEqual(floor.machines.map((m) => m.id), FLOOR_IDS);
+
+  // The ladder cabinets are retired. Their engine still exists so old
+  // rounds verify, but nothing on it may be reachable from the floor.
+  for (const id of MACHINE_IDS) {
+    assert.ok(!FLOOR_IDS.includes(id), `retired machine ${id} is back on the floor`);
+  }
 
   for (const view of floor.machines) {
     // The paytable a player reads is the one the server resolves
     // against — there is no second, prettier copy of the numbers.
     assert.ok(view.hit_rate > 0 && view.hit_rate < 1, view.id);
     assert.ok(view.sd > 0, view.id);
-    if (view.kind === 'lines') {
-      const m = LINE_MACHINES[view.id];
-      assert.equal(view.rows, m.rows, view.id);
-      assert.equal(view.cols, m.cols, view.id);
-      assert.equal(view.lines.length, m.lineCount, view.id);
-      assert.deepEqual(view.symbols, m.symbols, view.id);
-      assert.equal(view.wild, m.wild, view.id);
-      assert.equal(view.scatter, m.scatter, view.id);
-      // The wild never lands on reel 0, so a run of wilds cannot start a
-      // line and the wild can never pay on its own. Its row must read as
-      // zero rather than advertise a prize nobody can win.
-      assert.deepEqual(view.pay[m.wild], [0, 0, 0], `${view.id} wild pays nothing`);
-      assert.deepEqual(view.pay[m.scatter], [0, 0, 0], `${view.id} scatter row`);
-    } else {
-      assert.deepEqual(view.mult, MACHINES[view.id].mult, view.id);
-      assert.equal(view.reels, MACHINES[view.id].reels, view.id);
-    }
+    assert.equal(view.kind, 'lines', view.id);
+    const m = LINE_MACHINES[view.id];
+    assert.equal(view.rows, m.rows, view.id);
+    assert.equal(view.cols, m.cols, view.id);
+    assert.equal(view.lines.length, m.lineCount, view.id);
+    assert.deepEqual(view.symbols, m.symbols, view.id);
+    assert.equal(view.wild, m.wild, view.id);
+    assert.equal(view.scatter, m.scatter, view.id);
+    // The wild never lands on reel 0, so a run of wilds cannot start a
+    // line and the wild can never pay on its own. Its row must read as
+    // zero rather than advertise a prize nobody can win.
+    assert.deepEqual(view.pay[m.wild], [0, 0, 0], `${view.id} wild pays nothing`);
+    assert.deepEqual(view.pay[m.scatter], [0, 0, 0], `${view.id} scatter row`);
   }
 
   for (const view of floor.machines) {
@@ -281,17 +283,12 @@ test('slots: the floor is served from the registry and the machine is honoured',
     const { round } = JSON.parse(res.body);
     assert.equal(round.outcome.machine, view.id);
     assert.equal(round.payout, Math.round(5 * round.outcome.mult));
-    if (view.kind === 'lines') {
-      // Only the stops are recorded; the grid and every winning line are
-      // derived from them, so the two can never disagree.
-      assert.equal(round.outcome.kind, 'lines');
-      assert.equal(round.outcome.stops.length, view.cols, view.id);
-      assert.ok(round.outcome.stops.every((s) => Number.isInteger(s) && s >= 0), view.id);
-      assert.equal(round.outcome.reels, undefined, view.id);
-    } else {
-      assert.equal(round.outcome.reels.length, view.reels);
-      assert.ok(round.outcome.mult === 0 || view.mult.includes(round.outcome.mult), view.id);
-    }
+    // Only the stops are recorded; the grid and every winning line are
+    // derived from them, so the two can never disagree.
+    assert.equal(round.outcome.kind, 'lines');
+    assert.equal(round.outcome.stops.length, view.cols, view.id);
+    assert.ok(round.outcome.stops.every((s) => Number.isInteger(s) && s >= 0), view.id);
+    assert.equal(round.outcome.reels, undefined, view.id);
   }
 
   // An id that is not on the floor is rejected, not quietly swapped
@@ -302,11 +299,20 @@ test('slots: the floor is served from the registry and the machine is honoured',
   assert.equal(bogus.statusCode, 400);
   assert.equal(JSON.parse(bogus.body).error, 'err_validation');
 
-  // Omitting it keeps the pre-floor behaviour.
-  const legacy = await app.inject({
+  // So is a retired one: the engine is kept for replay, not for play.
+  for (const id of MACHINE_IDS) {
+    const retired = await app.inject({
+      method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5, machine: id },
+    });
+    assert.equal(retired.statusCode, 400, `${id} is still playable`);
+  }
+
+  // Omitting it lands on the floor's own default, never a retired id.
+  const bare = await app.inject({
     method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5 },
   });
-  assert.equal(JSON.parse(legacy.body).round.outcome.machine, DEFAULT_MACHINE);
+  assert.equal(JSON.parse(bare.body).round.outcome.machine, FLOOR_DEFAULT);
+  assert.ok(FLOOR_IDS.includes(FLOOR_DEFAULT));
   await app.close();
 });
 
@@ -326,7 +332,7 @@ test('slots: rounds settle atomically and the books always balance', async () =>
     assert.equal(body.balance, expected);
     assert.equal(body.round.net, body.round.payout - 7);
     assert.equal(body.round.nonce, i);
-    assert.equal(body.round.outcome.reels.length, 3);
+    assert.equal(body.round.outcome.stops.length, LINE_MACHINES[FLOOR_DEFAULT].cols);
   }
 
   // DB agrees with the running total: initial + sum(net) === balance.

@@ -119,7 +119,7 @@ export function registerGameRoutes(app) {
     requireEnabled(settings, 'slots');
     return {
       rtp: settings.rtp,
-      default: floor.DEFAULT_MACHINE,
+      default: floor.FLOOR_DEFAULT,
       machines: floor.floorViews(settings.rtp),
     };
   });
@@ -144,7 +144,7 @@ export function registerGameRoutes(app) {
       const settings = readSettings(db);
       requireEnabled(settings, 'slots');
       checkBet(req.body.bet, settings);
-      const machine = req.body.machine || floor.DEFAULT_MACHINE;
+      const machine = req.body.machine || floor.FLOOR_DEFAULT;
       return resolveRound(req.user.id, 'slots', req.body.bet, (seed) => {
         const out = floor.spinFloor({
           serverSeed: seed.server_seed,

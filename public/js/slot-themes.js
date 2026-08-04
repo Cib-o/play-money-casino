@@ -1,16 +1,14 @@
-// Presentation for each machine in src/games/slots.js. Everything here
-// is cosmetic: symbols, how long the reels run, how they land, and what
-// the cabinet sounds like. None of it can touch an outcome — the server
-// has already decided the result before a single frame is drawn, and
-// the animation is only ever handed the finished reel array.
+// Display table for the retired ladder machines in src/games/slots.js.
+// None of these cabinets is on the floor any more — the payline
+// machines in slot-line-art.js are what a player sees. What is left
+// here is what /verify needs to show a round recorded before the
+// retirement: the symbol row and the machine's name. Timings, landing
+// style and sound are kept alongside them so the table stays one
+// description of one machine rather than a stripped fragment.
 //
 // Symbols are ordered from the lowest multiplier to the highest, so
 // index i in a reel array is `symbols[i]`, and the count must match the
-// machine's paytable length (the page checks this at render time).
-//
-// Timings are what make two machines feel different with the same maths
-// behind them: `run` is the minimum time the reels turn, `gap` is the
-// pause between one reel landing and the next.
+// machine's paytable length (`test/slots.test.js` checks this).
 
 export const THEMES = {
   orchard: {

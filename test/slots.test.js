@@ -101,6 +101,26 @@ test('unknown machine ids fall back to the default, never throw', () => {
   );
 });
 
+// These cabinets are retired: none of them is on the floor and none can
+// be spun. What the engine still owes is exact reproduction of rounds
+// recorded while they were playable, which is why every calibration test
+// in this file stays. If a future change makes the engine unnecessary,
+// the rounds have to be re-verifiable some other way first.
+test('no retired machine is reachable from the floor', async () => {
+  const floor = await import('../src/games/slot-floor.js');
+  for (const id of MACHINE_IDS) {
+    assert.ok(!floor.FLOOR_IDS.includes(id), `${id} is retired but still on the floor`);
+    assert.equal(floor.isFloorMachine(id), false, id);
+  }
+  // …but a recorded round still replays on the engine that resolved it.
+  assert.equal(floor.kindOf(DEFAULT_MACHINE), 'ladder');
+  const replay = floor.spinFloor({
+    serverSeed: SEED, clientSeed: 'frozen', nonce: 9, rtp: 0.96, bet: 100, machine: 'classic',
+  });
+  assert.equal(replay.kind, 'ladder');
+  assert.equal(replay.mult, 25);
+});
+
 // `classic` decides the outcome of every slots round recorded before
 // the floor had more than one machine. Changing a single weight would
 // silently break verification for all of them, so its output is pinned.

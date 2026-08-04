@@ -58,7 +58,7 @@
   line-height: 1;
   filter: drop-shadow(0 4px 12px var(--m3));
 }
-/* Sprite artwork stands in for the emoji on the payline cabinets. */
+/* A cabinet is fronted by a sprite off its own reels. */
 .card-art .art-img { display: block; width: 46px; height: 46px; object-fit: contain; }
 .cab-art .art-img { display: block; width: 36px; height: 36px; object-fit: contain; }
 .card-name { font-size: 17px; font-weight: 800; margin-top: 8px; }
@@ -142,49 +142,6 @@
   pointer-events: none;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%);
 }
-.pay-line {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 50%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--m3), transparent);
-  pointer-events: none;
-}
-
-.reel-row {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 10px;
-}
-.reel-row[hidden],
-.reel-grid[hidden] { display: none; }
-
-.reel {
-  aspect-ratio: 3 / 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(24px, 6.4vw, 52px);
-  line-height: 1;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #0d1119, #171d2a 46%, #0d1119);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 12px 20px rgba(0, 0, 0, 0.55), inset 0 -12px 20px rgba(0, 0, 0, 0.55);
-  user-select: none;
-}
-.reel.spinning { animation: reel-blur 0.09s linear infinite; }
-@keyframes reel-blur {
-  0% { filter: blur(0); transform: translateY(0); }
-  50% { filter: blur(2.5px); transform: translateY(4px); }
-  100% { filter: blur(0); transform: translateY(0); }
-}
-.reel.matched {
-  border-color: var(--m2);
-  box-shadow: 0 0 24px -4px var(--m3), inset 0 0 18px -6px var(--m3);
-}
-
 /* ── the payline grid ───────────────────────────────────────────── */
 /* No gaps between cells: each one holds a face inset inside it, so the
    overlay's viewBox of exactly one unit per cell puts a payline through
@@ -217,6 +174,11 @@
   user-select: none;
 }
 .gface.spinning { animation: reel-blur 0.09s linear infinite; }
+@keyframes reel-blur {
+  0% { filter: blur(0); transform: translateY(0); }
+  50% { filter: blur(2.5px); transform: translateY(4px); }
+  100% { filter: blur(0); transform: translateY(0); }
+}
 .gface.won {
   border-color: var(--m2);
   box-shadow: 0 0 20px -4px var(--m3), inset 0 0 16px -6px var(--m3);
@@ -244,17 +206,13 @@
   to { opacity: 0.9; }
 }
 
-/* A grid has no single centre line to mark. */
-[data-kind='lines'] .pay-line { display: none; }
-
 /* Each machine lands its reels differently — the only job of these is
-   to make two cabinets feel unlike each other. */
-[data-land='clunk'] :is(.reel, .gface).landed { animation: land-clunk 0.16s ease-out; }
-[data-land='bounce'] :is(.reel, .gface).landed { animation: land-bounce 0.26s cubic-bezier(0.34, 1.7, 0.5, 1); }
-[data-land='glitch'] :is(.reel, .gface).landed { animation: land-glitch 0.14s steps(3, end); }
-[data-land='drift'] :is(.reel, .gface).landed { animation: land-drift 0.42s ease-out; }
-[data-land='heavy'] :is(.reel, .gface).landed { animation: land-heavy 0.3s ease-out; }
-[data-land='shimmer'] :is(.reel, .gface).landed { animation: land-shimmer 0.34s ease-out; }
+   to make two cabinets feel unlike each other. One per machine on the
+   floor; `test/slot-lines.test.js` pins the set. */
+[data-land='clunk'] .gface.landed { animation: land-clunk 0.16s ease-out; }
+[data-land='bounce'] .gface.landed { animation: land-bounce 0.26s cubic-bezier(0.34, 1.7, 0.5, 1); }
+[data-land='drift'] .gface.landed { animation: land-drift 0.42s ease-out; }
+[data-land='heavy'] .gface.landed { animation: land-heavy 0.3s ease-out; }
 
 @keyframes land-clunk {
   0% { transform: translateY(-9px); }
@@ -266,11 +224,6 @@
   60% { transform: translateY(3px) scale(1.05); }
   100% { transform: translateY(0) scale(1); }
 }
-@keyframes land-glitch {
-  0% { transform: translateX(-5px); filter: hue-rotate(60deg); }
-  50% { transform: translateX(4px); filter: hue-rotate(-40deg); }
-  100% { transform: translateX(0); filter: none; }
-}
 @keyframes land-drift {
   0% { transform: translateY(10px); opacity: 0.25; }
   100% { transform: translateY(0); opacity: 1; }
@@ -280,15 +233,9 @@
   55% { transform: translateY(4px) scaleY(0.93); }
   100% { transform: translateY(0) scaleY(1); }
 }
-@keyframes land-shimmer {
-  0% { transform: scale(1.14); filter: brightness(2.1); }
-  100% { transform: scale(1); filter: brightness(1); }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .reel.spinning,
   .gface.spinning { animation: none; opacity: 0.75; }
-  .reel.landed,
   .gface.landed { animation: none !important; }
   .line-overlay polyline { animation: none; opacity: 0.9; }
 }
@@ -363,10 +310,8 @@
 .pay-special .muted { display: block; font-size: 11.5px; line-height: 1.4; }
 
 @media (max-width: 480px) {
-  .reel-row { gap: 6px; }
-  .cab-screen { padding: 16px 10px; }
   .card-stats { gap: 10px; }
-  .cab-screen:has(.reel-grid:not([hidden])) { padding: 10px 6px; }
+  .cab-screen { padding: 10px 6px; }
   .gface { inset: 2px; border-radius: 8px; }
   .wl-line { min-width: 54px; }
 }

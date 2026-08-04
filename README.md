@@ -142,13 +142,11 @@ Node and asserts it matches the server implementation exactly.
 ### RTP
 
 Every machine on the floor returns the **same** configured RTP; what
-differs is the shape of the ride. On a ladder machine the multipliers
-are fixed and only the **frequency** of wins is calibrated. On a
-payline machine the reel strips are fixed and the whole paytable is
-scaled by one solved factor. Both are exact, not sampled: the test
-suite proves the theoretical return to within 1e-12 at RTP 0.80 / 0.90
-/ 0.96 / 0.98 / 0.99 and backs it with millions of simulated rounds
-against a standard-error band.
+differs is the shape of the ride. The reel strips are fixed and the
+whole paytable is scaled by one solved factor — exact, not sampled. The
+test suite proves the theoretical return to within 1e-12 at RTP 0.80 /
+0.90 / 0.96 / 0.98 / 0.99 and backs it with millions of simulated
+rounds against a standard-error band.
 
 There is deliberately no near-miss engineering, no
 losses-disguised-as-wins, no jackpots, streaks, levels or win jingles.
@@ -157,26 +155,26 @@ A win is displayed as a number.
 ## Games
 
 ### Slots
-Ten machines behind two engines, spread across the volatility scale
-from calm to extreme.
+Four payline machines, spread across the volatility scale from calm to
+extreme: a 5×3 or 5×4 grid over fixed reel strips, 20 or 30 paylines,
+wild and scatter.
 
-**Ladder machines** (six): 3 to 5 reels, one line, multipliers
-0.5×–2000×. The outcome is decided first from the calibrated table;
-reels are then chosen to display it — a losing round can never render
-as three of a kind.
-
-**Payline machines** (four): a 5×3 or 5×4 grid over fixed reel strips,
-20 or 30 paylines, wild and scatter. A line pays for the run that
-starts on the leftmost reel; the wild substitutes but never lands on
-reel 1, so it cannot open a line of its own — which is also what makes
-the expected return separable per symbol and therefore solvable in
-closed form. Only the reel **stops** are recorded: the grid and every
-winning line follow from them, so the screen and the commitment cannot
-disagree. The game page rebuilds both with the same module `/verify`
-uses.
+A line pays for the run that starts on the leftmost reel; the wild
+substitutes but never lands on reel 1, so it cannot open a line of its
+own — which is also what makes the expected return separable per symbol
+and therefore solvable in closed form. Only the reel **stops** are
+recorded: the grid and every winning line follow from them, so the
+screen and the commitment cannot disagree. The game page rebuilds both
+with the same module `/verify` uses.
 
 Symbol artwork is CC0 (see `public/assets/symbols/CREDITS.md`). No art,
 name or paytable is taken from a commercial slot vendor.
+
+An earlier outcome-first *ladder* engine (`src/games/slots.js`) is
+retired — none of its six cabinets is on the floor or can be spun. The
+code and its calibration tests remain because rounds resolved by it are
+already recorded, and `/verify` has to keep reproducing them exactly.
+Retiring a machine must not silently un-verify somebody's round.
 
 ### Roulette
 European single-zero with the classic paytable (house edge exactly

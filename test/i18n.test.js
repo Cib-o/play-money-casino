@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STRINGS } from '../public/js/strings.js';
 import { FLOOR_IDS } from '../src/games/slot-floor.js';
+import { MACHINE_IDS as RETIRED_IDS } from '../src/games/slots.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -44,6 +45,19 @@ test('every machine on the floor is named and described in both languages', () =
     for (const id of FLOOR_IDS) {
       assert.ok(STRINGS[locale][`slot_name_${id}`], `${locale}: no name for ${id}`);
       assert.ok(STRINGS[locale][`slot_tag_${id}`], `${locale}: no tagline for ${id}`);
+    }
+  }
+});
+
+// The retired ladder cabinets have no tagline any more — nothing lists
+// them — but /verify still puts every machine that can appear on a
+// recorded round into its picker, by name. Dropping these names would
+// leave `slot_name_classic` sitting in that dropdown, and the scan below
+// cannot catch it because the key is built at runtime.
+test('every retired machine keeps the name /verify labels it with', () => {
+  for (const locale of ['en', 'ka']) {
+    for (const id of RETIRED_IDS) {
+      assert.ok(STRINGS[locale][`slot_name_${id}`], `${locale}: no name for retired ${id}`);
     }
   }
 });

@@ -3,7 +3,6 @@ import { api } from '../api.js';
 import { fmt, t, applyI18n } from '../i18n.js';
 import { createBetControl } from '../bet.js';
 import { sfx, slotKit } from '../sound.js';
-import { theme } from '../slot-themes.js';
 import { lineArt, artFor } from '../slot-line-art.js';
 import { lineMachine, lineGrid, lineEvaluate, linePayScale } from '../verify-core.js';
 
@@ -14,15 +13,15 @@ import { lineMachine, lineGrid, lineEvaluate, linePayScale } from '../verify-cor
 // things chosen here, and none of them can see an outcome before the
 // server has already fixed it.
 //
-// Two kinds of cabinet share the page. A ladder machine draws one row of
-// symbols against a multiplier table; a payline machine draws a grid and
-// pays every line that opens on the leftmost reel. `kind` on the server
-// view decides which path runs — nothing else here guesses.
+// Every cabinet is a payline machine: a grid over fixed reel strips that
+// pays each line opening on the leftmost reel. A round records only its
+// reel stops, because the grid and every win follow from them. This page
+// rebuilds both with the same module the fairness verifier uses, so the
+// screen is showing what the committed stops actually mean rather than a
+// second telling of it.
 //
-// A payline round records only its reel stops, because the grid and
-// every win follow from them. This page rebuilds both with the same
-// module the fairness verifier uses, so the screen is showing what the
-// committed stops actually mean rather than a second telling of it.
+// The retired ladder cabinets are not rendered here at all. Replaying
+// one is /verify's job, and that page keeps its own display table.
 
 const ctx = await initShell({ requireAuth: true });
 
@@ -44,10 +43,7 @@ if (ctx) {
     const pct = (v) => `${(v * 100).toFixed(1)}%`;
     const volKey = (m) => `vol_${m.volatility}`;
     const nameOf = (m) => t(`slot_name_${m.id}`);
-    const isLines = (m) => m.kind === 'lines';
-    // Timings, landing animation and sound: the two registries answer
-    // the same four fields, so everything downstream is shape-blind.
-    const look = (m) => (isLines(m) ? lineArt(m.id) : theme(m.id));
+    const look = (m) => lineArt(m.id);
     // A scaled pay value is rarely a round number. Two decimals is
     // enough to be exact at every RTP the admin can set.
     const px = (v) => fmt(Math.round(v * 100) / 100);
@@ -59,18 +55,14 @@ if (ctx) {
       return kits.get(m.id);
     };
 
-    // A ladder cabinet is fronted by an emoji, a payline cabinet by the
-    // sprite of a symbol that really is on its reels.
+    // A cabinet is fronted by the sprite of a symbol that really is on
+    // its own reels, rather than a mascot picked to look expensive.
     function paintArt(node, m) {
       node.textContent = '';
-      if (isLines(m)) {
-        node.append(el('img', {
-          cls: 'art-img',
-          attrs: { src: artFor(lineArt(m.id).lead), alt: '', draggable: 'false' },
-        }));
-      } else {
-        node.textContent = theme(m.id).art;
-      }
+      node.append(el('img', {
+        cls: 'art-img',
+        attrs: { src: artFor(lineArt(m.id).lead), alt: '', draggable: 'false' },
+      }));
     }
 
     function artNode(m) {
@@ -81,18 +73,12 @@ if (ctx) {
 
     // ── the floor ──────────────────────────────────────────────────
     function statsOf(m) {
-      return isLines(m)
-        ? [
-            [`${m.cols}×${m.rows}`, 'slot_fact_grid'],
-            [String(m.lines.length), 'slot_fact_lines'],
-            [pct(m.hit_rate), 'slot_fact_hit'],
-            [`${px(m.top)}×`, 'slot_fact_topline'],
-          ]
-        : [
-            [String(m.reels), 'slot_fact_reels'],
-            [pct(m.hit_rate), 'slot_fact_hit'],
-            [`${fmt(m.top)}×`, 'slot_fact_top'],
-          ];
+      return [
+        [`${m.cols}×${m.rows}`, 'slot_fact_grid'],
+        [String(m.lines.length), 'slot_fact_lines'],
+        [pct(m.hit_rate), 'slot_fact_hit'],
+        [`${px(m.top)}×`, 'slot_fact_topline'],
+      ];
     }
 
     function renderFloor() {
@@ -101,7 +87,7 @@ if (ctx) {
       for (const m of config.machines) {
         grid.append(
           el('button', {
-            cls: `slot-card${isLines(m) ? ' lines' : ''}`,
+            cls: 'slot-card lines',
             attrs: { type: 'button', 'data-machine': m.id },
             on: {
               click: () => {
@@ -127,10 +113,9 @@ if (ctx) {
 
     // ── the cabinet ────────────────────────────────────────────────
     let machine = null; // the open machine's server view
-    let spec = null;    // for a payline machine: the browser's own copy
+    let spec = null;    // the browser's own copy of the reel strips
     let kit = null;
-    let cells = [];     // ladder: one cell per reel
-    let gcells = [];    // payline: [col][row] → { face, img }
+    let gcells = [];    // [col][row] → { face, img }
     let busy = false;
     const results = [];
 
@@ -143,22 +128,14 @@ if (ctx) {
 
     function paintFacts() {
       if (!machine) return;
-      const rows = isLines(machine)
-        ? [
-            ['slot_fact_grid', `${machine.cols}×${machine.rows}`],
-            ['slot_fact_lines', String(machine.lines.length)],
-            ['slot_fact_hit', pct(machine.hit_rate)],
-            ['slot_fact_topline', `${px(machine.top)}×`],
-            ['slot_fact_vol', t(volKey(machine))],
-            ['slot_fact_rtp', pct(config.rtp)],
-          ]
-        : [
-            ['slot_fact_reels', String(machine.reels)],
-            ['slot_fact_hit', pct(machine.hit_rate)],
-            ['slot_fact_top', `${fmt(machine.top)}×`],
-            ['slot_fact_vol', t(volKey(machine))],
-            ['slot_fact_rtp', pct(config.rtp)],
-          ];
+      const rows = [
+        ['slot_fact_grid', `${machine.cols}×${machine.rows}`],
+        ['slot_fact_lines', String(machine.lines.length)],
+        ['slot_fact_hit', pct(machine.hit_rate)],
+        ['slot_fact_topline', `${px(machine.top)}×`],
+        ['slot_fact_vol', t(volKey(machine))],
+        ['slot_fact_rtp', pct(config.rtp)],
+      ];
       const dl = $('facts');
       dl.textContent = '';
       for (const [key, value] of rows) {
@@ -177,7 +154,8 @@ if (ctx) {
     // the scatter is paid from its own table. Printing those zeros as
     // prizes would advertise something nobody can win, so both rows say
     // what the symbol actually does instead.
-    function paintLinePaytable() {
+    function paintPaytable() {
+      if (!machine) return;
       const runs = [];
       for (let r = 3; r <= machine.cols; r++) runs.push(r);
 
@@ -234,35 +212,6 @@ if (ctx) {
       $('pay-note').textContent = t('slot_pay_lines_note');
     }
 
-    function paintLadderPaytable() {
-      const syms = theme(machine.id).symbols;
-      const head = $('paytable-head');
-      head.textContent = '';
-      head.append(
-        el('tr', {}, [
-          el('th', { dataT: 'pay_symbol' }),
-          el('th', { cls: 'num', dataT: 'pay_mult' }),
-        ]),
-      );
-      const body = $('paytable-body');
-      body.textContent = '';
-      for (let i = machine.mult.length - 1; i >= 0; i--) {
-        body.append(
-          el('tr', {}, [
-            el('td', { text: Array.from({ length: machine.reels }, () => syms[i] ?? '?').join(' ') }),
-            el('td', { cls: 'num', text: `${fmt(machine.mult[i])}×` }),
-          ]),
-        );
-      }
-      $('pay-note').textContent = `${machine.reels} ${t('slot_of_a_kind')}`;
-    }
-
-    function paintPaytable() {
-      if (!machine) return;
-      if (isLines(machine)) paintLinePaytable();
-      else paintLadderPaytable();
-    }
-
     function paintTitles() {
       if (!machine) return;
       paintArt($('cab-art'), machine);
@@ -273,29 +222,12 @@ if (ctx) {
       vol.textContent = t(volKey(machine));
     }
 
-    // Idle faces are a fixed pattern, not a random draw — nothing on
-    // this page is allowed to look like it produced a result.
-    function idleSymbol(i) {
-      const syms = theme(machine.id).symbols;
-      return syms[(i * 3 + 1) % syms.length];
-    }
-
-    function buildReels() {
-      const row = $('reel-row');
-      row.textContent = '';
-      cells = [];
-      gcells = [];
-      row.dataset.count = String(machine.reels);
-      for (let i = 0; i < machine.reels; i++) {
-        const cell = el('div', { cls: 'reel', text: idleSymbol(i) });
-        row.append(cell);
-        cells.push(cell);
-      }
-    }
-
     // The grid has no gaps: each cell holds an inset face, so the SVG
     // overlay's viewBox of one unit per cell lands a payline exactly on
     // the centres it passes through, at any size and without measuring.
+    //
+    // Idle faces are a fixed pattern, not a random draw — nothing on
+    // this page is allowed to look like it produced a result.
     function buildGrid() {
       const wrap = $('reel-grid');
       const overlay = $('line-overlay');
@@ -304,7 +236,6 @@ if (ctx) {
       wrap.style.setProperty('--cols', String(machine.cols));
       wrap.style.setProperty('--rows', String(machine.rows));
       overlay.setAttribute('viewBox', `0 0 ${machine.cols} ${machine.rows}`);
-      cells = [];
       gcells = [];
       for (let c = 0; c < machine.cols; c++) {
         const column = [];
@@ -340,7 +271,6 @@ if (ctx) {
       $('net-value').textContent = '';
       $('net-value').className = 'net-value num';
       $('win-list').textContent = '';
-      for (const cell of cells) cell.classList.remove('matched', 'landed');
       for (const column of gcells) {
         for (const { face } of column) face.classList.remove('won', 'scattered', 'landed');
       }
@@ -354,7 +284,7 @@ if (ctx) {
         location.hash = '';
         return;
       }
-      spec = isLines(machine) ? lineMachine(machine.id) : null;
+      spec = lineMachine(machine.id);
       if (kit) kit.stop();
       kit = kitFor(machine);
       results.length = 0;
@@ -362,16 +292,9 @@ if (ctx) {
       const cab = $('cab');
       cab.dataset.machine = machine.id;
       cab.dataset.land = look(machine).land;
-      cab.dataset.kind = isLines(machine) ? 'lines' : 'ladder';
-      $('reel-row').hidden = isLines(machine);
-      $('reel-grid').hidden = !isLines(machine);
-      if (isLines(machine)) {
-        // Swapping a sprite in mid-tumble must not wait on the network.
-        for (const key of machine.symbols) new Image().src = artFor(key);
-        buildGrid();
-      } else {
-        buildReels();
-      }
+      // Swapping a sprite in mid-tumble must not wait on the network.
+      for (const key of machine.symbols) new Image().src = artFor(key);
+      buildGrid();
       clearReadout();
       renderStrip();
       paintTitles();
@@ -404,33 +327,19 @@ if (ctx) {
     // here yet and the animation never consults it.
     function startShuffle() {
       shuffleStep = 0;
-      if (isLines(machine)) {
-        const keys = machine.symbols;
-        for (const column of gcells) for (const { face } of column) {
-          face.classList.add('spinning');
-          face.classList.remove('won', 'scattered', 'landed');
-        }
-        shuffleTimer = setInterval(() => {
-          shuffleStep++;
-          gcells.forEach((column, c) => {
-            column.forEach(({ img }, r) => {
-              img.src = artFor(keys[(shuffleStep + c * 3 + r) % keys.length]);
-            });
-          });
-        }, 70);
-        return;
-      }
-      const syms = theme(machine.id).symbols;
-      for (const cell of cells) {
-        cell.classList.add('spinning');
-        cell.classList.remove('matched', 'landed');
+      const keys = machine.symbols;
+      for (const column of gcells) for (const { face } of column) {
+        face.classList.add('spinning');
+        face.classList.remove('won', 'scattered', 'landed');
       }
       shuffleTimer = setInterval(() => {
         shuffleStep++;
-        cells.forEach((cell, i) => {
-          cell.textContent = syms[(shuffleStep + i * 3) % syms.length];
+        gcells.forEach((column, c) => {
+          column.forEach(({ img }, r) => {
+            img.src = artFor(keys[(shuffleStep + c * 3 + r) % keys.length]);
+          });
         });
-      }, 65);
+      }, 70);
     }
 
     function stopShuffle() {
@@ -439,7 +348,6 @@ if (ctx) {
     }
 
     function stopSpinning() {
-      for (const cell of cells) cell.classList.remove('spinning');
       for (const column of gcells) for (const { face } of column) face.classList.remove('spinning');
     }
 
@@ -501,18 +409,6 @@ if (ctx) {
           ]),
         );
       }
-    }
-
-    async function landLadder(outcome, art) {
-      const shown = outcome.reels;
-      for (let i = 0; i < cells.length; i++) {
-        cells[i].classList.remove('spinning');
-        cells[i].textContent = art.symbols[shown[i]] ?? '?';
-        cells[i].classList.add('landed');
-        kit.reel(i, cells.length);
-        if (i < cells.length - 1) await sleep(art.gap);
-      }
-      if (outcome.mult > 0) for (const cell of cells) cell.classList.add('matched');
     }
 
     async function landLines(outcome, art) {
@@ -583,8 +479,7 @@ if (ctx) {
         // nothing gets painted onto them.
         if (machine === at) {
           const { outcome } = res.round;
-          if (isLines(at)) await landLines(outcome, art);
-          else await landLadder(outcome, art);
+          await landLines(outcome, art);
           kit.stop();
 
           const { mult } = outcome;

@@ -1,21 +1,22 @@
 import { uniform } from '../rng.js';
 
-// Outcome-first slot engine shared by every machine on the floor. The
-// multiplier is decided from a single uniform draw against a calibrated
-// cumulative table, and the reels are chosen afterwards purely to
-// display that result. Multipliers are fixed per machine; only the
-// frequency of wins moves with the configured RTP, which is how a real
-// par sheet behaves (higher RTP -> higher hit rate).
+// RETIRED ENGINE — REPLAY ONLY. None of these machines is on the floor
+// any more (see `slot-floor.js`); the payline engine in `slot-lines.js`
+// is the game now. This module stays because rounds resolved by it are
+// already in the database, and /verify has to keep reproducing them
+// exactly. Every number below is therefore frozen: change a weight and
+// you invalidate somebody's recorded round. Do not add machines here.
+//
+// Outcome-first: the multiplier is decided from a single uniform draw
+// against a calibrated cumulative table, and the reels are chosen
+// afterwards purely to display that result. Multipliers are fixed per
+// machine; only the frequency of wins moves with the configured RTP,
+// which is how a real par sheet behaves (higher RTP -> higher hit rate).
 //
 // A "machine" is nothing but a paytable plus a reel count. Every
-// machine runs the identical calibration, so the house edge is the same
-// everywhere and the only thing a player picks is the shape of the
-// ride: how often it pays and how big the tail is. Nothing here knows
-// about artwork, colours or sound — that is the client's business.
-//
-// The `classic` ladder is frozen. Its numbers decide the outcome of
-// every slots round already recorded, so changing a weight would make
-// old rounds fail verification. New machines get new ids instead.
+// machine ran the identical calibration, so the house edge was the same
+// everywhere. Nothing here knows about artwork, colours or sound — that
+// is the client's business.
 
 const CLASSIC_MULT = [0.5, 1, 2, 5, 10, 25, 100, 500, 2000];
 const CLASSIC_WEIGHT = [0.1, 0.08, 0.06, 0.035, 0.015, 0.006, 0.0018, 0.00018, 0.00002];

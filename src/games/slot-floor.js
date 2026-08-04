@@ -1,34 +1,34 @@
 import * as ladder from './slots.js';
 import * as lines from './slot-lines.js';
 
-// The floor runs two different slot engines side by side.
+// The floor runs on `slot-lines.js`: a real reel-strip machine where the
+// stops are drawn first and the win falls out of what lands on the
+// paylines.
 //
-// `slots.js` is the outcome-first ladder: one uniform draw picks a
+// `slots.js` is the older outcome-first ladder — one uniform draw picks a
 // multiplier from a calibrated table and the reels are chosen afterwards
-// to display it. `slot-lines.js` is a real reel-strip machine: the stops
-// are drawn first and the win falls out of what lands on the paylines.
-//
-// Keeping both is deliberate rather than transitional. Every slots round
-// already recorded was resolved by the ladder, and its cursor layout
-// differs from the payline engine's, so replacing it would make old
-// rounds fail verification — and a provably fair claim you break the
-// moment you ship a new version is not a claim worth making. They also
-// genuinely feel different to play, which is the point of a floor.
+// to display it. Its cabinets have been retired from the floor and
+// cannot be played. The engine itself stays, and stays tested, because
+// every slots round recorded before the retirement was resolved by it:
+// deleting the code would make those rounds fail verification, and a
+// provably fair claim you break the moment you change the line-up is not
+// a claim worth making. It is a replay path now, nothing more.
 //
 // This module is the only place that knows both exist. Routes and the
 // client talk to it, not to either engine directly.
 
-/**
- * Floor order: the payline cabinets first, since those are the ones with
- * a grid and artwork to look at, then the ladder cabinets. Within each
- * group, calmest first.
- */
-export const FLOOR_IDS = [...lines.LINE_MACHINE_IDS, ...ladder.MACHINE_IDS];
+/** The playable floor, calmest cabinet first. */
+export const FLOOR_IDS = [...lines.LINE_MACHINE_IDS];
+
+/** The cabinet a spin request that names no machine is played on. */
+export const FLOOR_DEFAULT = lines.LINE_MACHINE_IDS[0];
 
 /**
- * The id used when a spin request does not name a machine. Frozen to
- * `classic`: rounds recorded before the floor existed carry no machine
- * id, and they must keep resolving to the ladder they were played on.
+ * The id a *recorded* round with no machine of its own replays as.
+ * Frozen to `classic`: rounds from before the floor existed carry no
+ * machine id, and they must keep resolving to the ladder they were
+ * played on. This is a replay constant, not a playable default — see
+ * `FLOOR_DEFAULT` for that.
  */
 export const DEFAULT_MACHINE = ladder.DEFAULT_MACHINE;
 
