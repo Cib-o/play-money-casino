@@ -4,6 +4,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { openDb, nowISO } from '../src/db.js';
 import { hashPassword } from '../src/auth.js';
 import { buildApp } from '../src/app.js';
+import { MACHINES, MACHINE_IDS, DEFAULT_MACHINE } from '../src/games/slots.js';
 
 const SECRET = 'test-session-secret-0123456789abcdef0123456789';
 
@@ -39,6 +40,7 @@ test('anonymous requests get 401 on every game route', async () => {
     ['GET', '/api/rounds/some-id'],
     ['POST', '/api/seed/client', { client_seed: 'abc' }],
     ['POST', '/api/seed/rotate'],
+    ['GET', '/api/game/slots/machines'],
     ['POST', '/api/game/slots/spin', { bet: 1 }],
     ['POST', '/api/profile', { locale: 'en' }],
     ['POST', '/api/password', { current: 'x', next: 'longenough' }],
@@ -230,6 +232,55 @@ test('slots: bets are validated against min/max and balance', async () => {
   assert.equal(db.prepare('SELECT COUNT(*) AS c FROM rounds').get().c, 0);
   const me = await app.inject({ method: 'GET', url: '/api/me', cookies });
   assert.equal(JSON.parse(me.body).user.balance, 300);
+  await app.close();
+});
+
+test('slots: the floor is served from the registry and the machine is honoured', async () => {
+  const { db, app } = makeApp();
+  addUser(db, { username: 'p1', balance: 100000 });
+  const cookies = await login(app, 'p1');
+
+  const list = await app.inject({ method: 'GET', url: '/api/game/slots/machines', cookies });
+  assert.equal(list.statusCode, 200, list.body);
+  const floor = JSON.parse(list.body);
+  assert.equal(floor.default, DEFAULT_MACHINE);
+  assert.equal(floor.rtp, 0.96);
+  assert.deepEqual(floor.machines.map((m) => m.id), MACHINE_IDS);
+
+  for (const view of floor.machines) {
+    // The paytable a player reads is the one the server resolves
+    // against — there is no second, prettier copy of the numbers.
+    assert.deepEqual(view.mult, MACHINES[view.id].mult, view.id);
+    assert.equal(view.reels, MACHINES[view.id].reels, view.id);
+    assert.ok(view.hit_rate > 0 && view.hit_rate < 1, view.id);
+    assert.ok(view.sd > 0, view.id);
+  }
+
+  for (const view of floor.machines) {
+    const res = await app.inject({
+      method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5, machine: view.id },
+    });
+    assert.equal(res.statusCode, 200, res.body);
+    const { round } = JSON.parse(res.body);
+    assert.equal(round.outcome.machine, view.id);
+    assert.equal(round.outcome.reels.length, view.reels);
+    assert.ok(round.outcome.mult === 0 || view.mult.includes(round.outcome.mult), view.id);
+    assert.equal(round.payout, Math.round(5 * round.outcome.mult));
+  }
+
+  // An id that is not on the floor is rejected, not quietly swapped
+  // for the default — a client cannot invent a paytable.
+  const bogus = await app.inject({
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5, machine: 'not-a-machine' },
+  });
+  assert.equal(bogus.statusCode, 400);
+  assert.equal(JSON.parse(bogus.body).error, 'err_validation');
+
+  // Omitting it keeps the pre-floor behaviour.
+  const legacy = await app.inject({
+    method: 'POST', url: '/api/game/slots/spin', cookies, payload: { bet: 5 },
+  });
+  assert.equal(JSON.parse(legacy.body).round.outcome.machine, DEFAULT_MACHINE);
   await app.close();
 });
 

@@ -1,4 +1,4 @@
-import { initShell, toast, toastError } from '../shell.js';
+import { initShell, toast, toastError, onLocaleChange } from '../shell.js';
 import { api } from '../api.js';
 import { t, fmt } from '../i18n.js';
 import {
@@ -10,9 +10,10 @@ import {
   verifyBlackjackTable,
   bjHandTotal,
   ROULETTE_RED,
+  SLOT_MACHINE_IDS,
+  SLOT_DEFAULT_MACHINE,
 } from '../verify-core.js';
-
-const SYMBOLS = ['🍋', '🍒', '🍇', '🔔', '⭐', '💎', '7️⃣', '👑', '🎰'];
+import { theme } from '../slot-themes.js';
 
 // The verifier itself needs no session — anyone holding a revealed
 // seed can check a round. Loading a round by ID does need one, since
@@ -33,14 +34,16 @@ function pocketLabel(n) {
 const GAMES = {
   slots: {
     usesRtp: true,
-    describe(outcome) {
-      const reels = outcome.reels.map((i) => SYMBOLS[i] ?? '?').join(' ');
+    describe(outcome, machine) {
+      const syms = theme(machine || outcome.machine).symbols;
+      const reels = outcome.reels.map((i) => syms[i] ?? '?').join(' ');
       return `${reels}  ·  ${outcome.mult}×`;
     },
     async compute({ serverSeed, clientSeed, nonce, rtp }) {
-      const out = await verifySlots({ serverSeed, clientSeed, nonce, rtp });
+      const machine = $('v-machine').value;
+      const out = await verifySlots({ serverSeed, clientSeed, nonce, rtp, machine });
       return {
-        text: this.describe(out),
+        text: this.describe(out, machine),
         matches: recorded
           ? out.mult === recorded.outcome.mult &&
             JSON.stringify(out.reels) === JSON.stringify(recorded.outcome.reels)
@@ -115,9 +118,19 @@ const GAMES = {
   },
 };
 
+// Each slot machine resolves its draw against its own paytable, so the
+// verifier needs to know which cabinet a round was played on.
+const machineSelect = $('v-machine');
+for (const id of SLOT_MACHINE_IDS) machineSelect.append(new Option(t(`slot_name_${id}`), id));
+machineSelect.value = SLOT_DEFAULT_MACHINE;
+onLocaleChange(() => {
+  for (const option of machineSelect.options) option.textContent = t(`slot_name_${option.value}`);
+});
+
 function syncGameFields() {
   const game = $('v-game').value;
   $('rtp-row').hidden = !(GAMES[game] && GAMES[game].usesRtp);
+  $('machine-row').hidden = game !== 'slots';
 }
 $('v-game').addEventListener('change', syncGameFields);
 syncGameFields();
@@ -135,6 +148,9 @@ async function loadRound(id) {
     $('v-client-seed').value = round.client_seed;
     $('v-nonce').value = String(round.nonce);
     if (round.outcome.rtp !== undefined) $('v-rtp').value = String(round.outcome.rtp);
+    if (round.game === 'slots') {
+      $('v-machine').value = round.outcome.machine || SLOT_DEFAULT_MACHINE;
+    }
     if (round.server_seed) {
       $('v-server-seed').value = round.server_seed;
     } else {

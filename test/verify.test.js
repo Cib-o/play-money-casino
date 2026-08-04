@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { uniform as serverUniform, sha256hex as serverSha256 } from '../src/rng.js';
-import { spin } from '../src/games/slots.js';
+import {
+  spin,
+  MACHINES,
+  MACHINE_IDS,
+  DEFAULT_MACHINE,
+  buildTable,
+} from '../src/games/slots.js';
 import { spinNumber, settle } from '../src/games/roulette.js';
 import { roll } from '../src/games/dice.js';
 import { makeDraw, replay, dealerPlay } from '../src/games/blackjack.js';
@@ -13,6 +19,10 @@ import {
   verifyDice,
   verifyBlackjack,
   verifyBlackjackTable,
+  slotTable,
+  SLOT_MACHINES,
+  SLOT_MACHINE_IDS,
+  SLOT_DEFAULT_MACHINE,
 } from '../public/js/verify-core.js';
 
 // The browser verifier must mirror the server byte for byte. Running
@@ -113,13 +123,40 @@ test('verifyBlackjackTable mirrors the shared-table per-seat dealing', async () 
   }
 });
 
-test('verifySlots reproduces server spins across RTPs', async () => {
-  for (const rtp of [0.9, 0.96, 0.98]) {
-    for (let nonce = 0; nonce < 200; nonce++) {
-      const server = spin({ serverSeed: SEED, clientSeed: 'replay', nonce, rtp, bet: 10 });
-      const client = await verifySlots({ serverSeed: SEED, clientSeed: 'replay', nonce, rtp });
-      assert.equal(client.mult, server.mult, `mult at rtp ${rtp} nonce ${nonce}`);
-      assert.deepEqual(client.reels, server.reels, `reels at rtp ${rtp} nonce ${nonce}`);
+// The verifier keeps its own copy of every paytable on purpose — one
+// that imported the server's registry would prove nothing. These two
+// tests are what stop the copies drifting apart.
+test('the browser slot registry matches the server registry exactly', () => {
+  assert.deepEqual(SLOT_MACHINE_IDS, MACHINE_IDS, 'machine list');
+  assert.equal(SLOT_DEFAULT_MACHINE, DEFAULT_MACHINE);
+  for (const id of MACHINE_IDS) {
+    assert.deepEqual(SLOT_MACHINES[id].mult, MACHINES[id].mult, `${id} multipliers`);
+    assert.deepEqual(SLOT_MACHINES[id].weight, MACHINES[id].weight, `${id} weights`);
+    assert.equal(SLOT_MACHINES[id].reels, MACHINES[id].reels, `${id} reel count`);
+    for (const rtp of [0.8, 0.9, 0.96, 0.99]) {
+      assert.deepEqual(slotTable(rtp, id), buildTable(rtp, id), `${id} table at rtp ${rtp}`);
     }
+  }
+});
+
+test('verifySlots reproduces server spins on every machine across RTPs', async () => {
+  for (const machine of MACHINE_IDS) {
+    for (const rtp of [0.9, 0.96, 0.98]) {
+      for (let nonce = 0; nonce < 60; nonce++) {
+        const server = spin({ serverSeed: SEED, clientSeed: 'replay', nonce, rtp, bet: 10, machine });
+        const client = await verifySlots({ serverSeed: SEED, clientSeed: 'replay', nonce, rtp, machine });
+        assert.equal(client.mult, server.mult, `${machine} mult at rtp ${rtp} nonce ${nonce}`);
+        assert.deepEqual(client.reels, server.reels, `${machine} reels at rtp ${rtp} nonce ${nonce}`);
+      }
+    }
+  }
+});
+
+test('a round with no machine id still verifies as classic', async () => {
+  for (let nonce = 0; nonce < 120; nonce++) {
+    const server = spin({ serverSeed: SEED, clientSeed: 'legacy', nonce, rtp: 0.96, bet: 10 });
+    const client = await verifySlots({ serverSeed: SEED, clientSeed: 'legacy', nonce, rtp: 0.96 });
+    assert.equal(client.mult, server.mult, `mult at nonce ${nonce}`);
+    assert.deepEqual(client.reels, server.reels, `reels at nonce ${nonce}`);
   }
 });

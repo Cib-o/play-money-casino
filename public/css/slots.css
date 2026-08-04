@@ -1,0 +1,260 @@
+/* Slots floor and cabinets.
+   Every machine draws from the same three custom properties, so a new
+   theme is a palette plus a landing animation — not a new stylesheet.
+   --m1 cabinet body, --m2 the machine's accent, --m3 its glow. */
+
+.slot-card,
+.cab {
+  --m1: #141a26;
+  --m2: #f6b93b;
+  --m3: rgba(246, 185, 59, 0.32);
+}
+[data-machine='orchard'] { --m1: #12301f; --m2: #8fe37a; --m3: rgba(143, 227, 122, 0.32); }
+[data-machine='abyss']   { --m1: #071f2e; --m2: #4fd3e8; --m3: rgba(79, 211, 232, 0.3); }
+[data-machine='neon']    { --m1: #180a26; --m2: #ff5cd6; --m3: rgba(255, 92, 214, 0.34); }
+[data-machine='classic'] { --m1: #1c1305; --m2: #f6b93b; --m3: rgba(246, 185, 59, 0.32); }
+[data-machine='temple']  { --m1: #2a1a08; --m2: #ffb454; --m3: rgba(255, 180, 84, 0.3); }
+[data-machine='cosmos']  { --m1: #140d33; --m2: #b79bff; --m3: rgba(183, 155, 255, 0.32); }
+
+/* ── the floor ──────────────────────────────────────────────────── */
+.floor-hint { margin: 0 0 16px; }
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.slot-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 20px 18px 18px;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  color: var(--text);
+  background: linear-gradient(160deg, var(--m1), var(--panel) 78%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.slot-card:hover,
+.slot-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--m2);
+  box-shadow: 0 14px 30px -18px var(--m3);
+}
+.card-art {
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px var(--m3));
+}
+.card-name { font-size: 17px; font-weight: 800; margin-top: 8px; }
+.card-tag { font-size: 13px; color: var(--muted); min-height: 34px; }
+
+.card-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.card-stats .stat { display: flex; flex-direction: column; line-height: 1.25; }
+.card-stats em {
+  font-style: normal;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--m2);
+}
+.card-stats i { font-style: normal; font-size: 11px; color: var(--muted); }
+
+.card-glow {
+  position: absolute;
+  inset: auto -30% -60% -30%;
+  height: 130px;
+  background: radial-gradient(closest-side, var(--m3), transparent);
+  pointer-events: none;
+}
+
+/* ── volatility badge ───────────────────────────────────────────── */
+.vol-badge {
+  align-self: flex-start;
+  margin-top: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid currentColor;
+}
+.vol-low { color: #6fe3ae; }
+.vol-mid { color: #8fc4ff; }
+.vol-high { color: #ffc46b; }
+.vol-extreme { color: #ff8aa4; }
+
+/* ── the cabinet ────────────────────────────────────────────────── */
+.cab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 18px 22px;
+  background: linear-gradient(170deg, var(--m1), var(--panel) 72%);
+  border-color: color-mix(in srgb, var(--m2) 35%, var(--line));
+}
+
+.cab-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cab-art { font-size: 34px; line-height: 1; filter: drop-shadow(0 3px 10px var(--m3)); }
+.cab-titles { flex: 1 1 auto; min-width: 0; }
+.cab-name { font-size: 18px; font-weight: 800; }
+.cab-sub { font-size: 13px; color: var(--muted); }
+.cab-head .vol-badge { margin-top: 0; align-self: center; flex: 0 0 auto; }
+
+.cab-screen {
+  position: relative;
+  padding: 22px 16px;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--m2) 12%, transparent), transparent 70%),
+    #05070d;
+  border: 1px solid color-mix(in srgb, var(--m2) 28%, var(--line));
+  box-shadow: inset 0 2px 30px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+.cab-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%);
+}
+.pay-line {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--m3), transparent);
+  pointer-events: none;
+}
+
+.reel-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.reel {
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(24px, 6.4vw, 52px);
+  line-height: 1;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #0d1119, #171d2a 46%, #0d1119);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 12px 20px rgba(0, 0, 0, 0.55), inset 0 -12px 20px rgba(0, 0, 0, 0.55);
+  user-select: none;
+}
+.reel.spinning { animation: reel-blur 0.09s linear infinite; }
+@keyframes reel-blur {
+  0% { filter: blur(0); transform: translateY(0); }
+  50% { filter: blur(2.5px); transform: translateY(4px); }
+  100% { filter: blur(0); transform: translateY(0); }
+}
+.reel.matched {
+  border-color: var(--m2);
+  box-shadow: 0 0 24px -4px var(--m3), inset 0 0 18px -6px var(--m3);
+}
+
+/* Each machine lands its reels differently — the only job of these is
+   to make two cabinets feel unlike each other. */
+[data-land='clunk'] .reel.landed { animation: land-clunk 0.16s ease-out; }
+[data-land='bounce'] .reel.landed { animation: land-bounce 0.26s cubic-bezier(0.34, 1.7, 0.5, 1); }
+[data-land='glitch'] .reel.landed { animation: land-glitch 0.14s steps(3, end); }
+[data-land='drift'] .reel.landed { animation: land-drift 0.42s ease-out; }
+[data-land='heavy'] .reel.landed { animation: land-heavy 0.3s ease-out; }
+[data-land='shimmer'] .reel.landed { animation: land-shimmer 0.34s ease-out; }
+
+@keyframes land-clunk {
+  0% { transform: translateY(-9px); }
+  70% { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+@keyframes land-bounce {
+  0% { transform: translateY(-14px) scale(0.94); }
+  60% { transform: translateY(3px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes land-glitch {
+  0% { transform: translateX(-5px); filter: hue-rotate(60deg); }
+  50% { transform: translateX(4px); filter: hue-rotate(-40deg); }
+  100% { transform: translateX(0); filter: none; }
+}
+@keyframes land-drift {
+  0% { transform: translateY(10px); opacity: 0.25; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes land-heavy {
+  0% { transform: translateY(-16px) scaleY(1.1); }
+  55% { transform: translateY(4px) scaleY(0.93); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+@keyframes land-shimmer {
+  0% { transform: scale(1.14); filter: brightness(2.1); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reel.spinning { animation: none; opacity: 0.75; }
+  .reel.landed { animation: none !important; }
+}
+
+/* ── readout ────────────────────────────────────────────────────── */
+.cab-readout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 42px;
+}
+.mult-badge {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--m2);
+  padding: 3px 12px;
+  border: 1px solid color-mix(in srgb, var(--m2) 45%, transparent);
+  border-radius: 999px;
+}
+.mult-badge:empty { display: none; }
+.net-value { font-size: 26px; font-weight: 800; }
+
+/* ── side panel ─────────────────────────────────────────────────── */
+.spin-btn { border-color: var(--m2); }
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-weight: 700; text-align: right; }
+
+.paytable { font-size: 13px; }
+.paytable td { padding: 4px 8px; }
+.pay-note { font-size: 12px; margin: 8px 0 0; }
+
+@media (max-width: 480px) {
+  .reel-row { gap: 6px; }
+  .cab-screen { padding: 16px 10px; }
+  .card-stats { gap: 10px; }
+}

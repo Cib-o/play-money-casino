@@ -147,6 +147,154 @@ export const sfx = {
   },
 };
 
+/**
+ * A sound kit for one slot machine. Each machine on the floor gets its
+ * own recipe so the cabinets are told apart with the screen off: a
+ * different whirr while the reels run, a different texture when each
+ * one lands, a different two-note signature at the end.
+ *
+ * The result signature deliberately does *not* scale with how much was
+ * won. A 2x and a 2000x sound identical, and a zero-net round gets its
+ * own flat tone — the amount is reported as a number on screen, not as
+ * applause. Nothing here reacts to how close a losing spin came to a
+ * win either, because the client is never told.
+ *
+ * spec = {
+ *   loop:  { type, from, to, cut, flutter, gain, air, airGain },
+ *   stop:  { type, freq, bend, dur, gain, noiseFreq, noiseGain },
+ *   motif: [f1, f2, ...],  wave: OscillatorType
+ * }
+ */
+export function slotKit(spec) {
+  let running = null;
+
+  const teardown = (at) => {
+    if (!running) return;
+    const { c, nodes, env, air } = running;
+    running = null;
+    const t0 = c.currentTime;
+    env.gain.cancelScheduledValues(t0);
+    env.gain.setValueAtTime(Math.max(env.gain.value, 0.0001), t0);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+    if (air) {
+      air.gain.cancelScheduledValues(t0);
+      air.gain.setValueAtTime(Math.max(air.gain.value, 0.0001), t0);
+      air.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+    }
+    for (const n of nodes) {
+      try {
+        n.stop(t0 + (at || 0.14));
+      } catch {
+        /* already stopped */
+      }
+    }
+  };
+
+  return {
+    /** Start the reel whirr. Safe to call twice. */
+    start() {
+      this.stop();
+      const c = ready();
+      if (!c) return;
+      const t0 = c.currentTime;
+      const s = spec.loop;
+
+      const osc = c.createOscillator();
+      osc.type = s.type;
+      osc.frequency.setValueAtTime(s.from, t0);
+      osc.frequency.exponentialRampToValueAtTime(s.to, t0 + 0.55);
+
+      const filt = c.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = s.cut;
+      filt.Q.value = 4;
+
+      // Tremolo stage: the flutter is what reads as reels ticking past.
+      const trem = c.createGain();
+      trem.gain.value = 0.62;
+      const lfo = c.createOscillator();
+      lfo.type = 'square';
+      lfo.frequency.setValueAtTime(s.flutter, t0);
+      lfo.frequency.linearRampToValueAtTime(s.flutter * 0.55, t0 + 1.6);
+      const depth = c.createGain();
+      depth.gain.value = 0.38;
+      lfo.connect(depth).connect(trem.gain);
+
+      const env = c.createGain();
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(s.gain * VOL, t0 + 0.1);
+      osc.connect(filt).connect(trem).connect(env).connect(master);
+
+      // A breath of filtered noise so the whirr has some air in it.
+      let airSrc = null;
+      let airGain = null;
+      if (s.airGain) {
+        airSrc = c.createBufferSource();
+        airSrc.buffer = noiseBuffer(c);
+        airSrc.loop = true;
+        const band = c.createBiquadFilter();
+        band.type = 'bandpass';
+        band.frequency.value = s.air;
+        band.Q.value = 1.2;
+        airGain = c.createGain();
+        airGain.gain.setValueAtTime(0.0001, t0);
+        airGain.gain.exponentialRampToValueAtTime(s.airGain * VOL, t0 + 0.1);
+        airSrc.connect(band).connect(airGain).connect(master);
+        airSrc.start(t0);
+      }
+
+      osc.start(t0);
+      lfo.start(t0);
+      running = { c, env, air: airGain, nodes: [osc, lfo, ...(airSrc ? [airSrc] : [])] };
+    },
+
+    /** Cut the whirr. Idempotent, and safe when audio never started. */
+    stop() {
+      teardown();
+    },
+
+    /** One reel landing; pitch climbs across the row so it resolves. */
+    reel(i = 0, total = 3) {
+      const c = ready();
+      if (!c) return;
+      const s = spec.stop;
+      const step = total > 1 ? i / (total - 1) : 0;
+      const freq = s.freq * (1 + step * 0.5);
+      tone(c, {
+        freq,
+        to: s.bend ? freq * s.bend : undefined,
+        dur: s.dur,
+        type: s.type,
+        gain: s.gain,
+      });
+      if (s.noiseGain) {
+        noise(c, { dur: s.dur * 0.8, freq: s.noiseFreq, gain: s.noiseGain, type: 'bandpass' });
+      }
+    },
+
+    /** kind: 'win' (net up) | 'even' (net zero) | 'loss'. */
+    result(kind) {
+      const c = ready();
+      if (!c) return;
+      const m = spec.motif;
+      if (kind === 'win') {
+        arp(c, m, { step: 0.085, dur: 0.24, type: spec.wave, gain: 0.17 });
+      } else if (kind === 'even') {
+        tone(c, { freq: m[0], dur: 0.18, type: spec.wave, gain: 0.11 });
+      } else {
+        tone(c, { freq: m[0] / 2, to: m[0] / 2.6, dur: 0.22, type: spec.wave, gain: 0.1 });
+      }
+    },
+
+    /** The lever. */
+    press() {
+      const c = ready();
+      if (!c) return;
+      tone(c, { freq: spec.stop.freq * 0.5, to: spec.stop.freq, dur: 0.09, type: 'square', gain: 0.12 });
+    },
+  };
+}
+
 // Browsers start the audio context suspended until a user gesture.
 window.addEventListener(
   'pointerdown',

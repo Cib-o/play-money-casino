@@ -8,40 +8,66 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/slots.css">
 </head>
 <body>
   <header class="site" id="app-header"></header>
   <main class="container">
     <div class="page-head">
       <h1 data-t="title_slots"></h1>
+      <button class="btn ghost small" id="back-btn" type="button" hidden data-t="slot_back"></button>
     </div>
-    <div class="game-layout">
-      <section class="panel slot-machine">
-        <div class="reels">
-          <div class="reel" id="reel-0">✦</div>
-          <div class="reel" id="reel-1">✦</div>
-          <div class="reel" id="reel-2">✦</div>
-        </div>
-        <div class="result-line" id="result"></div>
-      </section>
-      <aside class="panel bet-box">
-        <div id="bet-control"></div>
-        <button class="btn big" id="spin-btn" data-t="btn_spin"></button>
-        <div>
-          <label data-t="last_results"></label>
-          <div class="strip" id="strip"></div>
-        </div>
-        <details>
-          <summary data-t="paytable"></summary>
-          <table class="data paytable">
-            <thead>
-              <tr><th data-t="pay_symbol"></th><th class="num" data-t="pay_mult"></th></tr>
-            </thead>
-            <tbody id="paytable-body"></tbody>
-          </table>
-        </details>
-      </aside>
-    </div>
+
+    <section id="floor">
+      <p class="floor-hint muted" data-t="slot_floor_hint"></p>
+      <div class="slot-grid" id="slot-grid"></div>
+    </section>
+
+    <section id="cabinet" hidden>
+      <div class="game-layout">
+        <section class="panel cab" id="cab">
+          <div class="cab-head">
+            <span class="cab-art" id="cab-art"></span>
+            <div class="cab-titles">
+              <div class="cab-name" id="cab-name"></div>
+              <div class="cab-sub" id="cab-sub"></div>
+            </div>
+            <span class="vol-badge" id="cab-vol"></span>
+          </div>
+
+          <div class="cab-screen">
+            <div class="reel-row" id="reel-row"></div>
+            <div class="pay-line"></div>
+            <div class="cab-glass"></div>
+          </div>
+
+          <div class="cab-readout">
+            <span class="mult-badge num" id="mult-badge"></span>
+            <span class="net-value num" id="net-value"></span>
+          </div>
+        </section>
+
+        <aside class="panel bet-box">
+          <div id="bet-control"></div>
+          <button class="btn big spin-btn" id="spin-btn" data-t="btn_spin"></button>
+          <div>
+            <label data-t="last_results"></label>
+            <div class="strip" id="strip"></div>
+          </div>
+          <dl class="facts" id="facts"></dl>
+          <details>
+            <summary data-t="paytable"></summary>
+            <table class="data paytable">
+              <thead>
+                <tr><th data-t="pay_symbol"></th><th class="num" data-t="pay_mult"></th></tr>
+              </thead>
+              <tbody id="paytable-body"></tbody>
+            </table>
+            <p class="pay-note muted" id="pay-note"></p>
+          </details>
+        </aside>
+      </div>
+    </section>
   </main>
   <footer class="site" id="app-footer"></footer>
   <div id="toast-root"></div>

@@ -41,20 +41,67 @@ export async function sha256Hex(input) {
 }
 
 // ── Slots (mirrors src/games/slots.js) ────────────────────────────
-export const SLOT_MULT = [0.5, 1, 2, 5, 10, 25, 100, 500, 2000];
-export const SLOT_WEIGHT = [0.1, 0.08, 0.06, 0.035, 0.015, 0.006, 0.0018, 0.00018, 0.00002];
+// One entry per machine on the floor, copied from the server registry.
+// The duplication is the point: a verifier that imported the server's
+// table would prove nothing. test/verify.test.js runs both and fails
+// the build if a single weight ever drifts apart.
+export const SLOT_MACHINES = {
+  orchard: {
+    reels: 3,
+    mult: [1, 2, 3, 5, 12, 40, 200],
+    weight: [0.34, 0.16, 0.07, 0.03, 0.008, 0.0015, 0.0001],
+  },
+  abyss: {
+    reels: 5,
+    mult: [1, 2, 4, 7, 15, 60, 220, 800],
+    weight: [0.2, 0.11, 0.05, 0.022, 0.008, 0.0016, 0.00025, 0.00004],
+  },
+  neon: {
+    reels: 4,
+    mult: [2, 4, 8, 20, 60, 200, 700, 2500],
+    weight: [0.095, 0.052, 0.023, 0.008, 0.002, 0.00035, 0.00005, 0.000005],
+  },
+  classic: {
+    reels: 3,
+    mult: [0.5, 1, 2, 5, 10, 25, 100, 500, 2000],
+    weight: [0.1, 0.08, 0.06, 0.035, 0.015, 0.006, 0.0018, 0.00018, 0.00002],
+  },
+  temple: {
+    reels: 5,
+    mult: [1, 3, 6, 15, 45, 150, 600, 2500, 10000],
+    weight: [0.1, 0.055, 0.026, 0.009, 0.0026, 0.0006, 0.00011, 0.0000135, 0.0000012],
+  },
+  cosmos: {
+    reels: 4,
+    mult: [3, 9, 30, 120, 900, 5000, 25000],
+    weight: [0.06, 0.02, 0.0055, 0.0011, 0.00011, 0.0000105, 0.0000011],
+  },
+};
+
+export const SLOT_MACHINE_IDS = Object.keys(SLOT_MACHINES);
+export const SLOT_DEFAULT_MACHINE = 'classic';
+
+// Rounds recorded before the floor had more than one machine carry no
+// machine id; they were all played on `classic`.
+export function slotMachine(id) {
+  return SLOT_MACHINES[id] || SLOT_MACHINES[SLOT_DEFAULT_MACHINE];
+}
+
+export const SLOT_MULT = SLOT_MACHINES.classic.mult;
+export const SLOT_WEIGHT = SLOT_MACHINES.classic.weight;
 export const SLOT_SYMBOL_COUNT = SLOT_MULT.length;
 
-export function slotTable(rtp) {
-  const sumW = SLOT_WEIGHT.reduce((a, b) => a + b, 0);
-  const sumWM = SLOT_WEIGHT.reduce((a, w, i) => a + w * SLOT_MULT[i], 0);
+export function slotTable(rtp, machine = SLOT_DEFAULT_MACHINE) {
+  const m = slotMachine(machine);
+  const sumW = m.weight.reduce((a, b) => a + b, 0);
+  const sumWM = m.weight.reduce((a, w, i) => a + w * m.mult[i], 0);
   const q = (rtp * sumW) / sumWM;
   const outs = [0];
   const cum = [1 - q];
   let acc = 1 - q;
-  for (let i = 0; i < SLOT_MULT.length; i++) {
-    acc += (q * SLOT_WEIGHT[i]) / sumW;
-    outs.push(SLOT_MULT[i]);
+  for (let i = 0; i < m.mult.length; i++) {
+    acc += (q * m.weight[i]) / sumW;
+    outs.push(m.mult[i]);
     cum.push(acc);
   }
   return { outs, cum, q };
@@ -160,8 +207,10 @@ export async function verifyBlackjackTable({ serverSeed, nonce, seat, actions = 
   return { player, dealer };
 }
 
-export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
-  const { outs, cum } = slotTable(rtp);
+export async function verifySlots({ serverSeed, clientSeed, nonce, rtp, machine }) {
+  const m = slotMachine(machine);
+  const symbols = m.mult.length;
+  const { outs, cum } = slotTable(rtp, machine);
   const u = await uniform(serverSeed, clientSeed, nonce, 0);
   let index = cum.length - 1;
   for (let i = 0; i < cum.length; i++) {
@@ -173,14 +222,14 @@ export async function verifySlots({ serverSeed, clientSeed, nonce, rtp }) {
   const mult = outs[index];
   let reels;
   if (index > 0) {
-    const s = index - 1;
-    reels = [s, s, s];
+    reels = Array.from({ length: m.reels }, () => index - 1);
   } else {
-    const draw = async (cursor) =>
-      Math.floor((await uniform(serverSeed, clientSeed, nonce, cursor)) * SLOT_SYMBOL_COUNT);
-    reels = [await draw(1), await draw(2), await draw(3)];
-    if (reels[0] === reels[1] && reels[1] === reels[2]) {
-      reels[2] = (reels[2] + 1) % SLOT_SYMBOL_COUNT;
+    reels = [];
+    for (let i = 0; i < m.reels; i++) {
+      reels.push(Math.floor((await uniform(serverSeed, clientSeed, nonce, i + 1)) * symbols));
+    }
+    if (reels.every((r) => r === reels[0])) {
+      reels[reels.length - 1] = (reels[reels.length - 1] + 1) % symbols;
     }
   }
   return { mult, reels, u };

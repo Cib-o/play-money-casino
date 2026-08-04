@@ -108,21 +108,42 @@ export function registerGameRoutes(app) {
     if (bet > settings.maxBet) throw new AppError(400, 'err_bet_too_large');
   }
 
-  const BET_BODY = {
-    type: 'object',
-    additionalProperties: false,
-    required: ['bet'],
-    properties: { bet: { type: 'integer', minimum: 1, maximum: 1000000000 } },
-  };
-
   // ── slots ─────────────────────────────────────────────────────────
+  // Every machine on the floor runs the same calibration at the same
+  // RTP; the machine id only selects which paytable and reel count the
+  // draw is resolved against. The list is served from the registry so
+  // the odds a player reads are the odds the server plays.
+  app.get('/api/game/slots/machines', auth, async () => {
+    const settings = readSettings(db);
+    requireEnabled(settings, 'slots');
+    return {
+      rtp: settings.rtp,
+      default: slots.DEFAULT_MACHINE,
+      machines: slots.MACHINE_IDS.map((id) => slots.machineView(id, settings.rtp)),
+    };
+  });
+
   app.post(
     '/api/game/slots/spin',
-    { preHandler: app.requireUser, schema: { body: BET_BODY } },
+    {
+      preHandler: app.requireUser,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['bet'],
+          properties: {
+            bet: { type: 'integer', minimum: 1, maximum: 1000000000 },
+            machine: { type: 'string', enum: slots.MACHINE_IDS },
+          },
+        },
+      },
+    },
     async (req) => {
       const settings = readSettings(db);
       requireEnabled(settings, 'slots');
       checkBet(req.body.bet, settings);
+      const machine = req.body.machine || slots.DEFAULT_MACHINE;
       return resolveRound(req.user.id, 'slots', req.body.bet, (seed) => {
         const out = slots.spin({
           serverSeed: seed.server_seed,
@@ -130,8 +151,12 @@ export function registerGameRoutes(app) {
           nonce: seed.nonce,
           rtp: settings.rtp,
           bet: req.body.bet,
+          machine,
         });
-        return { payout: out.payout, outcome: { rtp: settings.rtp, mult: out.mult, reels: out.reels } };
+        return {
+          payout: out.payout,
+          outcome: { rtp: settings.rtp, machine: out.machine, mult: out.mult, reels: out.reels },
+        };
       });
     },
   );
