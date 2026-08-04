@@ -28,10 +28,17 @@
 /* Enlarge the whole interface so it reads comfortably without the
    browser's own Ctrl+= zoom. zoom scales every px uniformly — exactly
    like browser zoom — so layouts keep working. Eased off on small
-   screens to avoid horizontal scrolling. */
-html { zoom: 1.2; }
+   screens to avoid horizontal scrolling.
+
+   One catch: the viewport units are NOT divided by zoom. Inside a zoomed
+   page `100vh` still resolves to the raw window height, which then gets
+   painted 1.2× taller than the window — 100vh overflows by a fifth of
+   the screen. So anything measured in vh/dvh has to divide the factor
+   back out, and --ui-zoom carries it. Keep the two numbers in each rule
+   below equal. */
+html { --ui-zoom: 1.2; zoom: 1.2; }
 /* on phones keep it 1:1 so the table and controls fit the screen */
-@media (max-width: 760px) { html { zoom: 1; } }
+@media (max-width: 760px) { html { --ui-zoom: 1; zoom: 1; } }
 
 html, body {
   margin: 0;
@@ -41,7 +48,7 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: calc(100vh / var(--ui-zoom));
   background:
     radial-gradient(1100px 500px at 85% -10%, rgba(124, 92, 255, 0.16), transparent 60%),
     radial-gradient(900px 420px at 0% 0%, rgba(246, 185, 59, 0.08), transparent 55%),
@@ -557,7 +564,7 @@ footer.site {
 
 /* ── Auth card ──────────────────────────────────────────────────── */
 .auth-wrap {
-  min-height: calc(100vh - 220px);
+  min-height: calc(100vh / var(--ui-zoom) - 220px);
   display: flex;
   align-items: center;
   justify-content: center;

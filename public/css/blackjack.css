@@ -20,8 +20,23 @@
    The blackjack page fills the whole viewport with no scrolling: the
    header and footer keep their size and the table (felt + controls)
    is uniformly scaled to whatever space is left, on any device, by
-   fitStage() in the page script. */
+   fitStage() in the page script.
+
+   That only works if `100dvh` really is the window, so this page opts
+   out of the site-wide `zoom: 1.2` (style.css) — under it the viewport
+   units are not scaled down to match, and the page painted a fifth
+   taller than the screen with the dock clipped off the bottom by
+   `overflow: hidden`. Phones never saw it because zoom is already 1
+   there. The chrome the player reads and taps gets the 1.2 back
+   individually below; the felt does not need it, since fitStage()
+   grows it to whatever is left over — and with an honest height, that
+   is now more room than it had while overflowing. */
+/* this sheet is loaded by blackjack.html alone, and after style.css */
+html { zoom: 1; }
 body.bj-page { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+body.bj-page header.site,
+body.bj-page .page-head,
+body.bj-page .bj-dock { zoom: var(--ui-zoom); }
 body.bj-page main.container {
   flex: 1;
   min-height: 0;
